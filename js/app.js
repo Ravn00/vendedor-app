@@ -13,9 +13,10 @@ async function init() {
 
 function tryLogin() {
   const pin = $("pw-input").value.trim();
-  if (pin === sellerPin) {
+  const match = sellers.find(s => String(s.pin) === pin);
+  if (match) {
     authed = true;
-    sellerName = pin === "1234" ? "Vendedor" : `Vendedor ${pin}`;
+    sellerName = match.name || "Vendedor";
     $("pw-gate").classList.remove("on");
     $("app-main").classList.add("on");
     $("seller-name").textContent = sellerName;
