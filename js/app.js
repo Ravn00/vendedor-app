@@ -5,7 +5,7 @@ async function init() {
   await loadSellerConfig();
   $("pw-btn").onclick = tryLogin;
   $("pw-input").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
-  $("ven-search").oninput = e => { searchFilter = e.target.value; renderParts(); };
+  let searchDebounce; $("ven-search").oninput = e => { searchFilter = e.target.value; clearTimeout(searchDebounce); searchDebounce = setTimeout(renderParts, 250); };
   $("ven-confirm").onclick = confirmSale;
   $("ven-cancel").onclick = () => closeModal("ven-modal");
   $("refresh-btn").onclick = () => { loadAvailableParts().then(() => { renderParts(); updateStats(); toast("Actualizado"); }); };
