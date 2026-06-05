@@ -15,7 +15,7 @@ async function sbFetch(path, method = "GET", body = null) {
     if (body) opt.body = JSON.stringify(body);
     const r = await fetch(SB_URL + path, opt);
     if (!r.ok) { const t = await r.text().catch(()=>""); console.warn("sbFetch", r.status, t.slice(0,200)); return null; }
-    if (method === "DELETE") return true;
+    if (method === "DELETE" || method === "PATCH") return true;
     const ct = r.headers.get("content-type")||"";
     if (ct.includes("json")) return r.json();
     return r.text();
@@ -37,9 +37,9 @@ async function sbFetchAll(path) {
 }
 
 async function loadSellerConfig() {
-  const data = await sbFetch("/rest/v1/config?select=value&name=eq.admin_config");
-  if (data && data.length && data[0].value) {
-    const cfg = data[0].value;
+  const data = await sbFetch("/rest/v1/admin_config?select=*&limit=1");
+  if (data && data.length && data[0]) {
+    const cfg = data[0];
     if (cfg.sellers && Array.isArray(cfg.sellers) && cfg.sellers.length) sellers = cfg.sellers;
   }
 }
