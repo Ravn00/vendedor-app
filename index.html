@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<title>Vendedor - Desarmaduria Paola</title>
+<meta name="theme-color" content="#0D0F12"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="pw-gate" class="on">
+  <div class="pw-box">
+    <div class="pw-icon">🔑</div>
+    <div class="pw-title">App Vendedor</div>
+    <div class="pw-sub">Ingresá tu PIN para acceder</div>
+    <input class="pw-input" id="pw-input" type="password" placeholder="PIN" autocomplete="off"/>
+    <button class="pw-btn" id="pw-btn">Acceder</button>
+    <div class="pw-error" id="pw-error"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-main">
+  <header class="app-hdr">
+    <div class="hdr-left">
+      <div class="hdr-title">Vendedor</div>
+      <div class="hdr-sub" id="seller-name"></div>
+    </div>
+    <div class="hdr-stats">
+      <span class="hdr-stat">📦 <strong id="stat-disponibles">0</strong></span>
+    </div>
+    <button class="hdr-refresh" id="refresh-btn" title="Actualizar">↻</button>
+  </header>
+
+  <div class="search-bar">
+    <input class="search-input" id="ven-search" placeholder="Buscar por marca o modelo…" autocomplete="off"/>
+  </div>
+
+  <div id="loading-state" class="loading">Cargando inventario…</div>
+
+  <div id="part-list"></div>
+</div>
+
+<!-- SALE MODAL -->
+<div class="modal-bg" id="ven-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="ven-title">Parte</div>
+    <div class="modal-sub" id="ven-detail"></div>
+    <div class="fld"><div class="fld-label">Precio de venta final</div>
+      <input class="fld-input" id="ven-price" type="number" step="100" min="0" placeholder="0"/></div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="ven-confirm">Confirmar Venta</button>
+      <button class="btn-ghost-sm" id="ven-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"><span id="toast-msg"></span></div>
+
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
