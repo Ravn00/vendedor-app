@@ -1,7 +1,7 @@
 const SB_URL = "https://xkguzluwbbxsbustlcxo.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrZ3V6bHV3YmJ4c2J1c3RsY3hvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNzQwOTUsImV4cCI6MjA5NTc1MDA5NX0.N6oatsQFuRPdlpKcwWnqNSvagtg1dGqjSNg2dzU9Tl0";
 
-let sellerPin = "1234";
+let sellers = [{ name: "Vendedor", pin: "1234" }];
 let sellerName = "";
 let parts = [];
 let deviceId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
@@ -37,10 +37,10 @@ async function sbFetchAll(path) {
 }
 
 async function loadSellerConfig() {
-  const data = await sbFetch("/rest/v1/config?select=value&name=eq.seller_config");
+  const data = await sbFetch("/rest/v1/config?select=value&name=eq.admin_config");
   if (data && data.length && data[0].value) {
     const cfg = data[0].value;
-    if (cfg.pin) sellerPin = String(cfg.pin);
+    if (cfg.sellers && Array.isArray(cfg.sellers) && cfg.sellers.length) sellers = cfg.sellers;
   }
 }
 
