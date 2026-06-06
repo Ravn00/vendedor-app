@@ -55,9 +55,27 @@ async function apiProxy(table, method, body, query) {
       body: JSON.stringify({ table, method, body, query: query || "" })
     });
     if (!res.ok) { console.warn("apiProxy error:", res.status); return null; }
-    return true;
-  } catch(e) { console.warn("apiProxy error:", e.message); return null; }
+  return true;
 }
+
+async function resetAllData() {
+  const step1 = confirm("⚠️ RESET TOTAL\n\nEsto eliminará TODOS los datos:\n• Catálogo completo\n• Ventas registradas\n• Historial de escaneos\n• Dispositivos\n• Configuración\n\n¿Estás seguro?");
+  if (!step1) return;
+  const step2 = confirm("ÚLTIMA ADVERTENCIA\n\nEsta acción NO se puede deshacer.\nTodo el localStorage y los datos en Supabase serán eliminados.\n\n¿Confirmas?");
+  if (!step2) return;
+  localStorage.clear();
+  if (writeToken) {
+    try {
+      await fetch(`${SB_URL}/functions/v1/api-proxy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-write-token": writeToken },
+        body: JSON.stringify({ action: "reset-all" })
+      });
+    } catch(e) { console.warn("reset-all error:", e); }
+  }
+  location.reload();
+}
+
 
 async function sbLogAudit(partId, action, changes) {
   try {
