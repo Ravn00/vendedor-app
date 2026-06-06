@@ -2,556 +2,109 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>A-CAP</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<title>V-CAP</title>
 <meta name="theme-color" content="#0D0F12"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="A-CAP"/>
-<link rel="manifest" href="manifest-panel.json"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="preconnect" href="https://cdnjs.cloudflare.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta name="apple-mobile-web-app-title" content="V-CAP"/>
+<link rel="manifest" href="manifest.json"/>
 <link rel="stylesheet" href="css/styles.css"/>
 </head>
 <body>
 
 <!-- PASSWORD GATE -->
-<div id="pw-gate">
+<div id="pw-gate" class="on">
   <div class="pw-box">
-    <div class="pw-icon">&#9881;</div>
-    <div class="pw-title">Panel de Administración</div>
-    <div class="pw-sub">Ingresa la contraseña de administrador</div>
-    <input class="pw-input" id="pw-input" type="password" placeholder="Contraseña" autocomplete="off"/>
+    <div class="pw-icon">🔑</div>
+    <div class="pw-title">App Vendedor</div>
+    <div class="pw-sub">Ingresá tu PIN para acceder</div>
+    <input class="pw-input" id="pw-input" type="password" placeholder="PIN" autocomplete="off"/>
     <button class="pw-btn" id="pw-btn">Acceder</button>
     <div class="pw-error" id="pw-error"></div>
   </div>
 </div>
 
-<!-- APP LAYOUT (hidden until login) -->
-<div id="app-layout" style="display:none">
-  <!-- SIDEBAR -->
-  <nav id="sidebar">
-    <div class="sidebar-inner" style="display:flex;flex-direction:column;height:100%">
-      <div id="sidebar-brand">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>A-CAP <span style="font-size:7px;color:var(--t5);letter-spacing:3px;font-weight:300;text-transform:uppercase;opacity:.5;user-select:none;margin-left:2px">by: ravn</span></span>
-      </div>
-      <div id="sidebar-nav">
-        <button class="snav-item" onclick="openModal('catalog')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          <span>Catálogo</span><span class="scnt" id="c-catalog">0</span>
-        </button>
-        <button class="snav-item" onclick="openModal('apikeys')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-          <span>API Keys</span>
-        </button>
-        <button class="snav-item" onclick="openModal('sellers')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Vendedores</span>
-        </button>
-        <button class="snav-item" onclick="openModal('sales')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Ventas</span>
-        </button>
-        <button class="snav-item" onclick="openModal('devices')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1h6"/><path d="M9 23h6"/><path d="M12 21v-2"/></svg>
-          <span>Dispositivos</span><span class="scnt" id="c-devices">0</span>
-        </button>
-        <button class="snav-item" onclick="openModal('scanlog')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span>Historial</span>
-        </button>
-        <button class="snav-item" onclick="openModal('audit')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span>Auditoría</span>
-        </button>
-        <button class="snav-item" onclick="openModal('messages')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>Mensajes</span>
-        </button>
-        <button class="snav-item" onclick="openModal('maintenance')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          <span>Mantenimiento</span>
-        </button>
-        <button class="snav-item" onclick="openModal('license')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>Licencias</span>
-        </button>
-        <button class="snav-item" onclick="openModal('diagnostics')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06"/><path d="M4.6 15a1.65 1.65 0 0 1-.33 1.82l-.06.06a2 2 0 0 0 2.83 2.83l.06-.06"/><path d="M15 4.6a1.65 1.65 0 0 1 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06"/><path d="M9 4.6a1.65 1.65 0 0 0-1.82-.33l-.06-.06a2 2 0 0 0-2.83 2.83l.06.06"/></svg>
-          <span>Diagnóstico</span>
-        </button>
-      </div>
-      <div id="sidebar-footer">
-        <button id="sidebar-theme" aria-label="Cambiar tema" title="Cambiar tema">
-          <svg viewBox="0 0 24 24" id="side-theme-icon" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <span>Tema</span>
-        </button>
-        <button class="snav-item" onclick="refreshAll()" style="font-size:10px;color:var(--t4)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36"/></svg>
-          <span>Sincronizar</span>
-        </button>
-      </div>
+<!-- MAIN APP -->
+<div id="app-main">
+  <header class="app-hdr">
+    <div class="hdr-left">
+      <div class="hdr-title">Vendedor</div>
+      <div class="hdr-sub" id="seller-name"></div>
+      <div style="font-size:7px;color:var(--t4);letter-spacing:3px;font-weight:300;text-transform:uppercase;margin-top:1px;opacity:.5;user-select:none">by: ravn</div>
     </div>
-  </nav>
+    <div class="hdr-stats">
+      <span class="hdr-stat">📦 <strong id="stat-disponibles">0</strong></span>
+      <span class="hdr-stat">📋 <strong id="stat-reservadas">0</strong></span>
+    </div>
+    <button class="hdr-refresh" id="history-btn" title="Mis ventas" aria-label="Mis ventas">💼</button>
+    <button class="hdr-refresh" id="refresh-btn" title="Actualizar" aria-label="Actualizar">↻</button>
+  </header>
 
-  <!-- MAIN CONTENT AREA -->
-  <div id="main-area">
-    <!-- HOME / DASHBOARD -->
-    <div id="home">
-      <div style="max-width:100%">
-        <div style="margin-bottom:20px">
-          <h1 style="font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:-.5px;color:var(--text);margin-bottom:4px">Panel de Administración</h1>
-          <p style="font-size:12px;color:var(--t3);line-height:1.6">Monitor general del sistema. Todos los datos se sincronizan automáticamente con los dispositivos CAPv2.</p>
-        </div>
-        <div class="dash-grid" id="dash-stats">
-          <div class="dash-card">
-            <div class="dash-val gold" id="dash-total">0</div>
-            <div class="dash-label">Partes totales</div>
-          </div>
-          <div class="dash-card">
-            <div class="dash-val green" id="dash-avail">0</div>
-            <div class="dash-label">Disponibles</div>
-          </div>
-          <div class="dash-card">
-            <div class="dash-val sold" id="dash-sold">0</div>
-            <div class="dash-label">Vendidas</div>
-          </div>
-          <div class="dash-card">
-            <div class="dash-val reserv" id="dash-resv">0</div>
-            <div class="dash-label">Reservadas</div>
-          </div>
-          <div class="dash-card">
-            <div class="dash-val default" id="dash-devices">0</div>
-            <div class="dash-label">Dispositivos</div>
-            <div class="dash-sub" id="dash-active-devices">activos</div>
-          </div>
-        </div>
-        <div class="dash-sections">
-          <button class="dash-section-btn" onclick="openModal('catalog')" aria-label="Abrir catálogo">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            <span class="ds-label">Catálogo</span>
-            <span class="ds-sub">Administrar partes</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('apikeys')" aria-label="Abrir API Keys">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-            <span class="ds-label">API Keys</span>
-            <span class="ds-sub">Claves de IA</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('sales')" aria-label="Abrir ventas">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <span class="ds-label">Ventas</span>
-            <span class="ds-sub">Comisiones por vendedor</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('devices')" aria-label="Abrir dispositivos">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1h6"/><path d="M9 23h6"/><path d="M12 21v-2"/></svg>
-            <span class="ds-label">Dispositivos</span>
-            <span class="ds-sub">Monitoreo</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('scanlog')" aria-label="Abrir historial">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span class="ds-label">Historial</span>
-            <span class="ds-sub">Escaneos</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('audit')" aria-label="Abrir auditoría">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span class="ds-label">Auditoría</span>
-            <span class="ds-sub">Cambios</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('messages')" aria-label="Abrir mensajes">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span class="ds-label">Mensajes</span>
-            <span class="ds-sub">Banner admin</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('maintenance')" aria-label="Abrir mantenimiento">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            <span class="ds-label">Mantenimiento</span>
-            <span class="ds-sub">Configuración</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('license')" aria-label="Abrir licencias">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span class="ds-label">Licencias</span>
-            <span class="ds-sub">IA y accesos</span>
-          </button>
-          <button class="dash-section-btn" onclick="openModal('diagnostics')" aria-label="Abrir diagnóstico">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span class="ds-label">Diagnóstico</span>
-            <span class="ds-sub">Verificar sistema</span>
-          </button>
-        </div>
-      </div>
+  <div class="search-bar">
+    <input class="search-input" id="ven-search" placeholder="Buscar parte…" autocomplete="off"/>
+  </div>
+
+  <div id="loading-state" class="loading">Cargando inventario…</div>
+
+  <div id="part-list"></div>
+</div>
+
+<!-- SALE MODAL -->
+<div class="modal-bg" id="ven-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="ven-title">Parte</div>
+    <div class="modal-sub" id="ven-detail"></div>
+    <div class="fld"><div class="fld-label">Precio de venta final</div>
+      <input class="fld-input" id="ven-price" type="number" step="100" min="0" placeholder="0"/></div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="ven-confirm">Confirmar Venta</button>
+      <button class="btn-ghost-sm" id="ven-cancel">Cancelar</button>
     </div>
   </div>
 </div>
 
-
-
-<!-- CATALOG CONTENT -->
-<div id="content-catalog" style="display:none">
-  <div class="sec-title">Catálogo de partes</div>
-  <div class="sec-sub">Vista general de todas las partes escaneadas desde los dispositivos CAPv2.</div>
-  <input class="search-bar" id="cat-search" placeholder="Buscar por marca, modelo, años…"/>
-  <div class="cat-tools">
-    <button class="filter-pill on" data-f="all" onclick="setCatFilter('all')">Todas</button>
-    <button class="filter-pill" data-f="avail" onclick="setCatFilter('avail')">Disponibles</button>
-    <button class="filter-pill" data-f="resv" onclick="setCatFilter('resv')">Reservadas</button>
-    <button class="filter-pill" data-f="sold" onclick="setCatFilter('sold')">Vendidas</button>
-    <span style="flex:1"></span>
-    <button class="btn-ghost btn-sm" onclick="exportExcel()" title="Exportar el catálogo a Excel con fotos incluidas">Exportar Excel</button>
-    <button class="btn-ghost btn-sm" onclick="exportJSON()" title="Exportar el catálogo completo como archivo JSON de respaldo">Exportar JSON</button>
-    <button class="btn-ghost btn-sm" onclick="document.getElementById('json-import').click()" title="Importar un archivo JSON de respaldo para restaurar el catálogo">Importar JSON</button>
-    <input type="file" id="json-import" accept=".json" style="display:none"/>
-  </div>
-  <div id="cat-stats" style="font-size:10px;color:var(--t4);margin-bottom:8px"></div>
-  <div class="cat-grid" id="cat-grid"></div>
-  <div class="cat-empty" id="cat-empty" style="display:none">No hay partes que coincidan.</div>
-</div>
-
-<!-- API KEYS CONTENT -->
-<div id="content-apikeys" style="display:none">
-  <div class="sec-title">API Keys</div>
-  <div class="sec-sub">Gestiona las claves de API para Groq y OpenRouter.</div>
-  <div class="sec-card">
-    <div id="keys-list"></div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <div style="flex:1;position:relative">
-        <input id="api-key-in" type="password" placeholder="Ingresa nueva API key"
-          style="width:100%;background:var(--s2);border:1px solid var(--bdr2);color:var(--text);padding:8px 34px 8px 10px;border-radius:var(--r6);font-size:12px"/>
-        <button id="api-eye" aria-label="Mostrar u ocultar la API key" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t4);cursor:pointer;display:flex;align-items:center;padding:0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
-      <button class="btn-primary btn-sm" id="api-add">+ Agregar</button>
-    </div>
-    <div id="api-status" style="font-size:11px;margin-top:5px;min-height:14px;color:var(--t4)"></div>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)">
-      <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:4px">Modelo Groq</label>
-      <select id="or-model-sel" style="width:100%;background:var(--s2);border:1px solid var(--bdr2);color:var(--text);padding:7px;border-radius:var(--r6);font-size:12px">
-        <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout 17B (recomendado)</option>
-        <option value="meta-llama/llama-4-maverick-17b-128e-instruct">Llama 4 Maverick 17B</option>
-        <option value="llama-3.2-90b-vision-preview">Llama 3.2 90B Vision</option>
-      </select>
+<!-- RESERVE MODAL -->
+<div class="modal-bg" id="res-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="res-title">Reservar</div>
+    <div class="modal-sub">Datos del cliente para la reserva</div>
+    <div class="fld"><div class="fld-label">Nombre del cliente</div>
+      <input class="fld-input" id="res-cliente" placeholder="Nombre" autocomplete="off"/></div>
+    <div class="fld"><div class="fld-label">Teléfono</div>
+      <input class="fld-input" id="res-telefono" type="tel" placeholder="+56 9 XXXX XXXX"/></div>
+    <div class="fld"><div class="fld-label">Nota (opcional)</div>
+      <input class="fld-input" id="res-nota" placeholder="Nota"/></div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="res-confirm">Confirmar Reserva</button>
+      <button class="btn-ghost-sm" id="res-cancel">Cancelar</button>
     </div>
   </div>
 </div>
 
-<!-- SELLERS CONTENT -->
-<div id="content-sellers" style="display:none">
-  <div class="sec-title">Vendedores</div>
-  <div class="sec-sub">Gestiona los PIN de acceso para la app de vendedores.</div>
-  <div class="sec-card">
-    <div id="sellers-list"></div>
-    <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)">
-      <div style="flex:1"><input id="sel-name-in" placeholder="Nombre del vendedor" style="width:100%;background:var(--s2);border:1px solid var(--bdr2);color:var(--text);padding:8px 10px;border-radius:var(--r6);font-size:12px;margin-bottom:6px"/><input id="sel-pin-in" type="password" placeholder="PIN (4 dígitos)" maxlength="4" style="width:100%;background:var(--s2);border:1px solid var(--bdr2);color:var(--text);padding:8px 10px;border-radius:var(--r6);font-size:12px"/></div>
-      <button class="btn-primary btn-sm" id="sel-add" style="align-self:flex-end">+ Agregar</button>
-    </div>
-    <div id="sel-status" style="font-size:11px;margin-top:5px;min-height:14px;color:var(--t4)"></div>
+<!-- SALES HISTORY MODAL -->
+<div class="modal-bg" id="hist-modal">
+  <div class="modal-sheet" style="max-height:80vh">
+    <div class="modal-title">Mis Ventas</div>
+    <div class="modal-sub" id="hist-sub">Tus ventas registradas</div>
+    <div id="hist-list" style="max-height:50vh;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="modal-btns"><button class="btn-ghost-sm" id="hist-close-btn">Cerrar</button></div>
   </div>
-</div>
-
-<!-- SALES CONTENT -->
-<div id="content-sales" style="display:none">
-  <div class="sec-title">Ventas y Comisiones</div>
-  <div class="sec-sub">Registro de todas las ventas realizadas desde la app de vendedores con comisiones del 10%.</div>
-  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-    <input class="fld-in" id="sales-search" placeholder="Buscar por vendedor o parte…" style="flex:1;min-width:140px"/>
-    <select class="fld-in" id="sales-filter" style="width:auto;min-width:90px">
-      <option value="all">Todos</option>
-      <option value="seller">Por vendedor</option>
-    </select>
-    <button class="btn-ghost btn-sm" id="sales-refresh" title="Recargar ventas">Refrescar</button>
-  </div>
-  <div class="sales-summary" id="sales-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Fecha</th><th>Vendedor</th><th>Parte</th><th>Total</th><th>Comisión 10%</th></tr></thead>
-      <tbody id="sales-tbody"></tbody>
-    </table>
-  </div>
-  <div id="sales-empty" style="display:none;padding:24px;text-align:center;color:var(--t4);font-size:12px">Sin ventas registradas aún.</div>
-  <div style="text-align:center;margin-top:10px">
-    <button class="btn-ghost btn-sm" id="sales-load-more" title="Cargar más ventas">Cargar más</button>
-    <button class="btn-ghost btn-sm" id="sales-export" title="Exportar ventas a Excel" style="margin-left:6px">Exportar Excel</button>
-  </div>
-</div>
-
-<!-- DEVICES CONTENT -->
-<div id="content-devices" style="display:none">
-  <div class="sec-title">Dispositivos conectados</div>
-  <div class="sec-sub">Monitorea los dispositivos que ejecutan CAPv2. Puedes bloquear o eliminar dispositivos.</div>
-  <div class="dev-table-wrap">
-    <table>
-      <thead><tr><th>Dispositivo</th><th>Nombre</th><th>Última conexión</th><th>Escaneos</th><th>Estado</th><th>Acción</th></tr></thead>
-      <tbody id="dev-tbody"></tbody>
-    </table>
-  </div>
-  <div class="dev-grid" id="dev-grid"></div>
-  <div id="dev-empty" style="display:none;padding:24px;text-align:center;color:var(--t4);font-size:12px">Sin dispositivos registrados aún.</div>
-</div>
-
-<!-- SCAN LOG CONTENT -->
-<div id="content-scanlog" style="display:none">
-  <div class="sec-title">Historial de escaneos</div>
-  <div class="sec-sub">Registro de todas las piezas escaneadas desde los dispositivos.</div>
-  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-    <input class="fld-in" id="sl-search" placeholder="Buscar por ID de parte o dispositivo" style="flex:1;min-width:140px"/>
-    <select class="fld-in" id="sl-filter" style="width:auto;min-width:90px">
-      <option value="all">Todos</option>
-      <option value="success">Exitosos</option>
-      <option value="error">Con error</option>
-    </select>
-    <button class="btn-ghost btn-sm" id="sl-refresh" title="Recargar el historial de escaneos">Refrescar</button>
-  </div>
-  <div id="sl-stats" style="font-size:10px;color:var(--t4);margin-bottom:6px"></div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Hora</th><th>Dispositivo</th><th>Parte ID</th><th>Categoría</th><th>Resultado</th><th>Latencia</th></tr></thead>
-      <tbody id="sl-tbody"></tbody>
-    </table>
-  </div>
-  <div id="sl-empty" style="display:none;padding:24px;text-align:center;color:var(--t4);font-size:12px">Sin escaneos registrados aún.</div>
-  <div style="text-align:center;margin-top:10px">
-    <button class="btn-ghost btn-sm" id="sl-load-more" title="Cargar más registros del historial">Cargar más</button>
-  </div>
-</div>
-
-<!-- AUDIT CONTENT -->
-<div id="content-audit" style="display:none">
-  <div class="sec-title">Auditoría de cambios</div>
-  <div class="sec-sub">Registro de todas las modificaciones hechas al catálogo.</div>
-  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-    <input class="fld-in" id="audit-search" placeholder="Buscar por ID de parte" style="flex:1;min-width:140px"/>
-    <select class="fld-in" id="audit-filter" style="width:auto;min-width:90px">
-      <option value="all">Todos</option>
-      <option value="create">Creadas</option>
-      <option value="update">Editadas</option>
-      <option value="delete">Eliminadas</option>
-    </select>
-    <button class="btn-ghost btn-sm" id="audit-refresh" title="Recargar el registro de auditoría">Refrescar</button>
-  </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Hora</th><th>Parte ID</th><th>Acción</th><th>Detalle</th><th>Dispositivo</th></tr></thead>
-      <tbody id="audit-tbody"></tbody>
-    </table>
-  </div>
-  <div id="audit-empty" style="display:none;padding:24px;text-align:center;color:var(--t4);font-size:12px">Sin cambios registrados aún.</div>
-  <div style="text-align:center;margin-top:10px">
-    <button class="btn-ghost btn-sm" id="audit-load-more" title="Cargar más registros de auditoría">Cargar más</button>
-  </div>
-</div>
-
-<!-- MESSAGES CONTENT -->
-<div id="content-messages" style="display:none">
-  <div class="sec-title">Mensaje administrador</div>
-  <div class="sec-sub">Envía un mensaje que aparecerá como banner en todos los dispositivos CAPv2.</div>
-  <div class="sec-card">
-    <div class="fld-group">
-      <div class="fld-row">
-        <label>Mensaje</label>
-        <input class="fld-in" id="msg-text" placeholder="Ej: Nueva actualización disponible" maxlength="200"/>
-      </div>
-      <div class="fld-row">
-        <label>Tipo</label>
-        <select class="fld-in" id="msg-type" style="width:auto">
-          <option value="info">Info (azul)</option>
-          <option value="warning">Advertencia (amarillo)</option>
-          <option value="critical">Crítico (rojo)</option>
-        </select>
-      </div>
-      <div class="fld-row">
-        <label></label>
-        <div style="display:flex;gap:6px">
-          <button class="btn-primary btn-sm" id="msg-send">Enviar mensaje</button>
-          <button class="btn-ghost btn-sm" id="msg-clear">Limpiar mensaje</button>
-        </div>
-      </div>
-      <div id="msg-preview" style="background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r6);padding:8px 12px;font-size:12px;color:var(--t4);display:none;line-height:1.5;margin-top:4px"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MAINTENANCE CONTENT -->
-<div id="content-maintenance" style="display:none">
-  <div class="sec-title">Modo mantenimiento</div>
-  <div class="sec-sub">Activa el modo mantenimiento para bloquear temporalmente todos los dispositivos CAPv2.</div>
-  <div class="sec-card">
-    <div class="fld-row" style="margin-bottom:12px">
-      <div class="toggle-wrap">
-        <div class="toggle-track" id="maint-toggle">
-          <div class="toggle-knob"></div>
-        </div>
-        <span style="font-size:12px;color:var(--t2)" id="maint-label">Mantenimiento desactivado</span>
-      </div>
-    </div>
-    <div class="fld-group">
-      <div class="fld-row">
-        <label>Mensaje</label>
-        <input class="fld-in" id="maint-msg" placeholder="Ej: Sistema en mantenimiento programado" maxlength="200"/>
-      </div>
-      <div class="fld-row">
-        <label></label>
-        <button class="btn-primary btn-sm" id="maint-save">Guardar configuración</button>
-      </div>
-    </div>
-  </div>
-  <div class="sec-title" style="margin-top:20px">Contraseña de administrador</div>
-  <div class="sec-sub">Cambia la contraseña del panel. Se guarda en Supabase como hash SHA-256.</div>
-  <div class="sec-card">
-    <div class="fld-group">
-      <div class="fld-row">
-        <label>Nueva contraseña</label>
-        <input class="fld-in" id="admin-pw-input" type="password" placeholder="Mínimo 6 caracteres"/>
-      </div>
-      <div class="fld-row">
-        <label>Confirmar</label>
-        <input class="fld-in" id="admin-pw-confirm" type="password" placeholder="Repite la contraseña"/>
-      </div>
-      <div class="fld-row">
-        <label></label>
-        <button class="btn-primary btn-sm" id="admin-pw-save">Cambiar contraseña</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- LICENSE CONTENT -->
-<div id="content-license" style="display:none">
-  <div class="sec-title">Configuración de IA</div>
-  <div class="sec-sub">Configura el proveedor y modelo de IA que usarán los dispositivos CAPv2.</div>
-  <div class="sec-card">
-    <div class="fld-group">
-      <div class="fld-row">
-        <label>Proveedor IA</label>
-        <select class="fld-in" id="lic-provider" style="width:auto">
-          <option value="groq">Groq</option>
-          <option value="openrouter">OpenRouter</option>
-        </select>
-      </div>
-      <div class="fld-row">
-        <label>Modelo IA</label>
-        <input class="fld-in" id="lic-model" placeholder="meta-llama/llama-4-scout-17b-16e-instruct"/>
-      </div>
-      <div class="fld-row">
-        <label></label>
-        <button class="btn-primary btn-sm" id="lic-save">Guardar configuración</button>
-      </div>
-    </div>
-  </div>
-  <div class="sec-title" style="margin-top:20px">License Secret</div>
-  <div class="sec-sub">El secret se usa para validar los códigos de acceso en los dispositivos CAPv2.</div>
-  <div class="sec-card">
-    <div class="fld-group">
-      <div class="fld-row">
-        <label>Secret actual</label>
-        <input class="fld-in" id="lic-secret" type="password" placeholder="License secret"/>
-      </div>
-      <div class="fld-row">
-        <label>Nuevo secret</label>
-        <input class="fld-in" id="lic-new-secret" type="password" placeholder="Nuevo valor (opcional)"/>
-      </div>
-      <div class="fld-row">
-        <label></label>
-        <button class="btn-primary btn-sm" id="lic-secret-save">Guardar secret</button>
-      </div>
-    </div>
-  </div>
-  <div class="sec-title" style="margin-top:20px">Generar código de acceso</div>
-  <div class="sec-sub">Genera un código con formato <strong>AP-XXXX-MMAA-XXXXXXXX</strong> para cada usuario de CAPv2.</div>
-  <div class="sec-card">
-    <div class="fld-group">
-      <div class="fld-row">
-        <label>Cliente</label>
-        <input class="fld-in" id="lic-gen-client" placeholder="Ej: C001" maxlength="10"/>
-      </div>
-      <div class="fld-row">
-        <label>Mes</label>
-        <select class="fld-in" id="lic-gen-month" style="width:auto">
-          <option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option>
-          <option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
-        </select>
-      </div>
-      <div class="fld-row">
-        <label>Año</label>
-        <select class="fld-in" id="lic-gen-year" style="width:auto">
-          <option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
-        </select>
-      </div>
-      <div class="fld-row">
-        <label></label>
-        <button class="btn-primary btn-sm" id="lic-gen-btn">Generar código</button>
-      </div>
-      <div class="fld-row" id="lic-gen-result" style="display:none">
-        <label style="color:var(--green-lt)">Código</label>
-        <div style="flex:1;display:flex;gap:6px;align-items:center">
-          <input class="fld-in" id="lic-gen-output" readonly style="font-family:monospace;letter-spacing:1px;color:var(--gold);font-weight:600"/>
-          <button class="btn-ghost btn-sm" id="lic-gen-copy" title="Copiar">Copiar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- DIAGNOSTICS CONTENT -->
-<div id="content-diagnostics" style="display:none">
-  <div class="diag-header">
-    <div>
-      <div class="sec-title" style="margin-bottom:0">Diagnóstico CAPv2</div>
-      <div class="sec-sub" style="margin-bottom:0;margin-top:4px">Verificaciones completas del sistema CAPv2 — base de datos, API, licencias, almacenamiento y más</div>
-    </div>
-    <button class="diag-run-all" id="diag-run-all">Ejecutar todo</button>
-  </div>
-  <div class="diag-grid" id="diag-grid-src"></div>
-  <div class="diag-log-wrap">
-    <div class="diag-log-title">Registro detallado</div>
-    <pre id="diag-log-content"></pre>
-  </div>
-</div>
-
-<!-- MODAL OVERLAY -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
-  <div class="modal-frame" id="modal-frame" onclick="event.stopPropagation()">
-    <div class="modal-top">
-      <span class="modal-title" id="modal-title"></span>
-      <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">&times;</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-  </div>
-</div>
-
-<!-- CONFIRM DIALOG -->
-<div id="confirm-bg" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:16px">
-  <div id="confirm-box" style="background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r12);padding:20px;max-width:320px;width:100%;text-align:center;animation:fadeUp .2s ease">
-    <h3 id="conf-title" style="font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">Confirmar</h3>
-    <p id="conf-msg" style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.5"></p>
-    <div style="display:flex;gap:6px;justify-content:center">
-      <button id="conf-ok" class="btn-primary">Confirmar</button>
-      <button id="conf-cancel" class="btn-ghost">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()">
-  <button id="lb-close" aria-label="Cerrar imagen" onclick="event.stopPropagation();closeLightbox()">&times;</button>
-  <img id="lb-img" src="" alt="" onclick="event.stopPropagation()"/>
 </div>
 
 <!-- TOAST -->
-<div id="toast" aria-live="polite"></div>
+<div id="toast" aria-live="polite"><span id="toast-msg"></span></div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <img id="lb-img" src="" alt="Imagen ampliada"/>
+  <button id="lb-close" onclick="closeLightbox()" aria-label="Cerrar">&#10005;</button>
+</div>
 
 <script src="js/config.js"></script>
 <script src="js/supabase.js"></script>
-<script src="js/constants.js"></script>
-<script src="js/license.js"></script>
-<script src="js/init.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/health.js"></script>
 <script src="js/app.js"></script>
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");</script>
 </body>
 </html>
-
