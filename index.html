@@ -31,15 +31,18 @@
     <div class="hdr-left">
       <div class="hdr-title">Vendedor</div>
       <div class="hdr-sub" id="seller-name"></div>
+      <div style="font-size:7px;color:var(--t4);letter-spacing:3px;font-weight:300;text-transform:uppercase;margin-top:1px;opacity:.5;user-select:none">by: ravn</div>
     </div>
     <div class="hdr-stats">
       <span class="hdr-stat">📦 <strong id="stat-disponibles">0</strong></span>
+      <span class="hdr-stat">📋 <strong id="stat-reservadas">0</strong></span>
     </div>
-    <button class="hdr-refresh" id="refresh-btn" title="Actualizar">↻</button>
+    <button class="hdr-refresh" id="history-btn" title="Mis ventas" aria-label="Mis ventas">💼</button>
+    <button class="hdr-refresh" id="refresh-btn" title="Actualizar" aria-label="Actualizar">↻</button>
   </header>
 
   <div class="search-bar">
-    <input class="search-input" id="ven-search" placeholder="Buscar por marca o modelo…" autocomplete="off"/>
+    <input class="search-input" id="ven-search" placeholder="Buscar parte…" autocomplete="off"/>
   </div>
 
   <div id="loading-state" class="loading">Cargando inventario…</div>
@@ -61,8 +64,36 @@
   </div>
 </div>
 
+<!-- RESERVE MODAL -->
+<div class="modal-bg" id="res-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="res-title">Reservar</div>
+    <div class="modal-sub">Datos del cliente para la reserva</div>
+    <div class="fld"><div class="fld-label">Nombre del cliente</div>
+      <input class="fld-input" id="res-cliente" placeholder="Nombre" autocomplete="off"/></div>
+    <div class="fld"><div class="fld-label">Teléfono</div>
+      <input class="fld-input" id="res-telefono" type="tel" placeholder="+56 9 XXXX XXXX"/></div>
+    <div class="fld"><div class="fld-label">Nota (opcional)</div>
+      <input class="fld-input" id="res-nota" placeholder="Nota"/></div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="res-confirm">Confirmar Reserva</button>
+      <button class="btn-ghost-sm" id="res-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SALES HISTORY MODAL -->
+<div class="modal-bg" id="hist-modal">
+  <div class="modal-sheet" style="max-height:80vh">
+    <div class="modal-title">Mis Ventas</div>
+    <div class="modal-sub" id="hist-sub">Tus ventas registradas</div>
+    <div id="hist-list" style="max-height:50vh;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="modal-btns"><button class="btn-ghost-sm" id="hist-close-btn">Cerrar</button></div>
+  </div>
+</div>
+
 <!-- TOAST -->
-<div id="toast"><span id="toast-msg"></span></div>
+<div id="toast" aria-live="polite"><span id="toast-msg"></span></div>
 
 <script src="js/config.js"></script>
 <script src="js/supabase.js"></script>
