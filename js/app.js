@@ -66,7 +66,7 @@ function renderParts() {
     const est = p.estado || "disponible";
     const imgSrc = p.preview || p.previewFull || "";
     const card = document.createElement("div"); card.className = "part-card" + (est === "reservada" ? " part-card-reserva" : "");
-    card.innerHTML = `<div class="part-card-img">${imgSrc ? `<img src="${escH(imgSrc)}" width="400" height="130" loading="lazy" alt="${escH(p.marca)} ${escH(p.modelo)}">` : `<div class="part-card-noimg">📦</div>`}</div>
+    card.innerHTML = `<div class="part-card-img">${imgSrc ? `<img src="${escH(imgSrc)}" width="400" height="130" loading="lazy" alt="${escH(p.marca)} ${escH(p.modelo)}" data-img="${escH(imgSrc)}">` : `<div class="part-card-noimg">📦</div>`}</div>
       <div class="part-card-body">
         <div class="part-card-title">${escH(p.marca)} ${escH(p.modelo)}</div>
         <div class="part-card-meta">${escH(p.años)} · ${escH(p.posicion)} · ${escH(p.categoria)}</div>
@@ -85,6 +85,7 @@ function renderParts() {
     }
     card.querySelector("[data-whatsapp]").onclick = (e) => { e.stopPropagation(); copyToClipboard(formatWhatsAppText(p)); };
     card.querySelector("[data-hist]").onclick = (e) => { e.stopPropagation(); showPartHistory(p); };
+    card.querySelector(".part-card-img img[data-img]")?.addEventListener("click", (e) => { e.stopPropagation(); openLightbox(e.currentTarget.dataset.img); });
     list.appendChild(card);
   });
 }

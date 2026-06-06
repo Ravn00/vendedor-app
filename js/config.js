@@ -5,6 +5,7 @@ let sellers = [{ name: "Vendedor", pin: "1234" }];
 let sellerName = "";
 let parts = [];
 let deviceId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
+let writeToken = "";
 
 function $(id) { return document.getElementById(id); }
 function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
@@ -41,7 +42,21 @@ async function loadSellerConfig() {
   if (data && data.length && data[0]) {
     const cfg = data[0];
     if (cfg.sellers && Array.isArray(cfg.sellers) && cfg.sellers.length) sellers = cfg.sellers;
+    writeToken = cfg.write_token || "";
   }
+}
+
+async function apiProxy(table, method, body, query) {
+  if (!writeToken) { console.warn("apiProxy: no write token"); return null; }
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/api-proxy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-write-token": writeToken },
+      body: JSON.stringify({ table, method, body, query: query || "" })
+    });
+    if (!res.ok) { console.warn("apiProxy error:", res.status); return null; }
+    return true;
+  } catch(e) { console.warn("apiProxy error:", e.message); return null; }
 }
 
 async function sbLogAudit(partId, action, changes) {
@@ -53,3 +68,32 @@ async function sbLogAudit(partId, action, changes) {
     });
   } catch(_) {}
 }
+
+function formatWhatsAppText(p) {
+  const est = p.estado || (p.sold ? "vendida" : "disponible");
+  return [
+    `*Producto:* ${p.marca} ${p.modelo}`,
+    `*Compatibilidad:* ${p.años || ""}${p.posicion ? " · " + p.posicion : ""}`,
+    `${p.ubicacion ? `*Ubicación:* ${p.ubicacion}` : ""}`,
+    `${p.precioVenta ? `*Precio:* $${Number(p.precioVenta).toLocaleString("es-CL")}` : ""}`,
+    `*Estado:* ${est.charAt(0).toUpperCase() + est.slice(1)}`,
+    `${p.descripcion ? `\n${p.descripcion}` : ""}`
+  ].filter(Boolean).join("\n");
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => toast("Copiado al portapapeles")).catch(() => fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); toast("Copiado"); } catch(_) { toast("Error al copiar"); }
+  document.body.removeChild(ta);
+}
+
+function openLightbox(src) { $("lb-img").src = src; $("lightbox").classList.add("on"); }
+function closeLightbox() { $("lightbox").classList.remove("on"); $("lb-img").src = ""; }
