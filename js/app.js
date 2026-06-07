@@ -342,11 +342,16 @@ async function openMySales() {
       if (!sale) return;
       btn.onclick = async (e) => {
         e.stopPropagation();
-        if (!confirm("¿Eliminar esta venta del historial?\nNo afecta el estado de la parte en el catálogo.")) return;
+        if (!confirm("¿Eliminar esta venta del historial?")) return;
         btn.disabled = true; btn.textContent = "…";
         const ok = await deleteSale(sale.id);
-        if (ok) { toast("Venta eliminada"); openMySales(); }
-        else { toast("Error al eliminar"); btn.disabled = false; btn.textContent = "✕"; }
+        if (!ok) { toast("Error al eliminar"); btn.disabled = false; btn.textContent = "✕"; return; }
+        const partId = (sale.items||[])[0]?.partId;
+        if (partId && confirm("¿Restaurar la parte como disponible en el catálogo?")) {
+          await restorePart(partId);
+        }
+        toast("Venta eliminada");
+        openMySales();
       };
     });
 
