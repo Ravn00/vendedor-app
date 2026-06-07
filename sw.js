@@ -1,7 +1,7 @@
-const CACHE = 'vcap-v1';
+const CACHE = 'vcap-v2';
 const URLS = ['index.html', 'manifest.json',
   'css/styles.css',
-  'js/config.js', 'js/supabase.js', 'js/app.js'];
+  'js/config.js?v=2', 'js/supabase.js?v=2', 'js/app.js?v=2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -18,7 +18,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.hostname.endsWith('supabase.co')) return;
-  if (url.pathname === '/vendedor-app/' || url.pathname === '/vendedor-app/index.html') {
+  if (url.pathname === '/vendedor-app/' || url.pathname === '/vendedor-app/index.html' || url.pathname === '/vendedor-app/') {
     e.respondWith(
       fetch(e.request).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(e.request, c)); return r; })
         .catch(() => caches.match(e.request))
