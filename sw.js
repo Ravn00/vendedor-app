@@ -1,4 +1,4 @@
-const CACHE = 'vcap-v2';
+const CACHE = 'vcap-v3';
 const URLS = ['index.html', 'manifest.json',
   'css/styles.css',
   'js/config.js?v=2', 'js/supabase.js?v=2', 'js/app.js?v=2'];
