@@ -13,35 +13,38 @@ async function loadAvailableParts() {
 async function recordSale(part, price, vendedor) {
   const now = new Date().toLocaleString("es-CL");
   const ventaId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
-  const old = { estado: part.estado, fechaVenta: part.fechaVenta };
-
-  const venta = {
-    id: ventaId,
-    clienteId: null,
-    clienteNombre: "Venta directa",
-    items: [{ partId: part.id, marca: part.marca, modelo: part.modelo, precio: price, cantidad: 1 }],
-    total: price,
-    comision: Math.round(price * 0.1),
-    vendedor,
-    fecha: now,
-    notas: ""
-  };
-
-  const ventaRes = await apiProxy("ventas", "POST", { id: ventaId, data: venta });
-  if (!ventaRes) throw new Error("Error al registrar la venta");
+  const old = { estado: part.estado, stock: part.stock, fechaVenta: part.fechaVenta };
 
   const stockActual = (part.stock !== undefined && part.stock !== null) ? Number(part.stock) : 1;
+
+  // Conditional PATCH: fail if stock already decremented or part already sold (prevents double-sale)
+  const cond = stockActual > 1
+    ? `&data->>stock=eq.${encodeURIComponent(String(stockActual))}`
+    : `&data->>estado=ne.${encodeURIComponent("vendida")}`;
+
   if (stockActual > 1) {
     part.stock = stockActual - 1;
   } else {
     part.estado = "vendida";
     part.fechaVenta = now;
   }
-  const res1 = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}`);
-  if (!res1) {
+
+  const resUpdate = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}${cond}`);
+  if (!resUpdate) {
     Object.assign(part, old);
-    await apiProxy("ventas", "DELETE", null, `?id=eq.${encodeURIComponent(ventaId)}`);
-    throw new Error("Error al actualizar la parte");
+    throw new Error("La parte ya fue vendida o su stock cambió");
+  }
+
+  const venta = {
+    id: ventaId, clienteId: null, clienteNombre: "Venta directa",
+    items: [{ partId: part.id, marca: part.marca, modelo: part.modelo, precio: price, cantidad: 1 }],
+    total: price, comision: Math.round(price * 0.1), vendedor, fecha: now, notas: ""
+  };
+
+  if (!await apiProxy("ventas", "POST", { id: ventaId, data: venta })) {
+    Object.assign(part, old);
+    await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}`);
+    throw new Error("Error al registrar la venta");
   }
 
   await sbLogAudit(part.id, "sale", { vendedor, price, ventaId });
