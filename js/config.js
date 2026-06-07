@@ -6,6 +6,16 @@ let sellerName = "";
 let parts = [];
 let deviceId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
 let writeToken = "";
+const COMMISSION_RATE = 0.1;
+const SESSION_DURATION = 3600000;
+let salesTotal = 0;
+let commissionTotal = 0;
+
+function getSessionUser() {
+  try { const d = JSON.parse(localStorage.getItem("authSession")); return d && d.expiry > Date.now() ? d : null; } catch { return null; }
+}
+function saveSession(name) { localStorage.setItem("authSession", JSON.stringify({ name, expiry: Date.now() + SESSION_DURATION })); }
+function clearSession() { localStorage.removeItem("authSession"); }
 
 function $(id) { return document.getElementById(id); }
 function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
