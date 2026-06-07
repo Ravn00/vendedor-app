@@ -12,6 +12,7 @@ async function init() {
   if (session && session.name && sellers.some(s => s.name === session.name)) {
     authed = true;
     sellerName = session.name;
+    refreshLastPaidAt();
     $("pw-gate").classList.remove("on");
     $("app-main").classList.add("on");
     $("seller-name").textContent = sellerName;
@@ -38,6 +39,7 @@ async function init() {
 
   // Auto-sync cada 30 segundos
   setInterval(autoSync, 30000);
+  setInterval(reloadLastPaidAt, 30000);
 }
 
 async function autoSync() {
@@ -51,6 +53,17 @@ async function autoSync() {
   } catch(e) { console.warn("autoSync error:", e); }
 }
 
+async function reloadLastPaidAt() {
+  if (!authed) return;
+  try {
+    const data = await sbFetch("/rest/v1/admin_config?select=sellers&limit=1");
+    if (data && data.length && data[0]?.sellers) {
+      sellers = data[0].sellers;
+      refreshLastPaidAt();
+    }
+  } catch(_) {}
+}
+
 function tryLogin() {
   if (loggingIn) return;
   const pin = $("pw-input").value.trim();
@@ -59,6 +72,7 @@ function tryLogin() {
     loggingIn = true;
     authed = true;
     sellerName = match.name || "Vendedor";
+    refreshLastPaidAt();
     saveSession(sellerName);
     $("pw-gate").classList.remove("on");
     $("app-main").classList.add("on");
@@ -83,26 +97,42 @@ async function loadData() {
 function loadSalesStatsFromCache() {
   try {
     const c = JSON.parse(localStorage.getItem("vcap_stats") || "{}");
-    if (c.total && c.comision) { salesTotal = c.total; commissionTotal = c.comision; updateCommissionDisplay(); }
+    if (c.histTotal) { historicalSalesTotal = c.histTotal; historicalCommission = c.histComm; pendingCommission = c.pendComm || 0; updateCommissionDisplay(); }
   } catch(_) {}
 }
 
 function saveSalesStatsCache() {
-  try { localStorage.setItem("vcap_stats", JSON.stringify({ total: salesTotal, comision: commissionTotal })); } catch(_) {}
+  try { localStorage.setItem("vcap_stats", JSON.stringify({ histTotal: historicalSalesTotal, histComm: historicalCommission, pendComm: pendingCommission })); } catch(_) {}
 }
 
 async function loadSalesStats() {
   loadSalesStatsFromCache();
   const sales = await loadMySales(sellerName);
-  salesTotal = sales.reduce((s, v) => s + (v.total || 0), 0);
-  commissionTotal = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
+  historicalSalesTotal = sales.reduce((s, v) => s + (v.total || 0), 0);
+  historicalCommission = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
+
+  const since = lastPaidAt ? new Date(lastPaidAt).getTime() : 0;
+  pendingCommission = sales
+    .filter(v => {
+      const t = v.created_at ? new Date(v.created_at.endsWith("Z")||v.created_at.includes("+")?v.created_at:v.created_at+"Z").getTime() : 0;
+      return t > since;
+    })
+    .reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
+
   updateCommissionDisplay();
   saveSalesStatsCache();
 }
 
 function updateCommissionDisplay() {
-  $("stat-vendido").textContent = Math.round(salesTotal).toLocaleString("es-CL");
-  $("stat-comision").textContent = Math.round(commissionTotal).toLocaleString("es-CL");
+  $("stat-vendido").textContent = Math.round(historicalSalesTotal).toLocaleString("es-CL");
+  $("stat-comision").textContent = Math.round(pendingCommission).toLocaleString("es-CL");
+  if (lastPaidAt) {
+    const d = new Date(lastPaidAt.endsWith("Z")||lastPaidAt.includes("+")?lastPaidAt:lastPaidAt+"Z");
+    $("stat-lastpay").textContent = d.toLocaleDateString("es-CL");
+    $("sbar-lastpay").style.display = "";
+  } else {
+    $("sbar-lastpay").style.display = "none";
+  }
 }
 
 function renderParts() {
@@ -182,8 +212,9 @@ async function confirmSale() {
     closeModal("ven-modal");
     renderParts();
     updateStats();
-    salesTotal += price;
-    commissionTotal += Math.round(price * COMMISSION_RATE);
+    historicalSalesTotal += price;
+    historicalCommission += Math.round(price * COMMISSION_RATE);
+    pendingCommission += Math.round(price * COMMISSION_RATE);
     updateCommissionDisplay();
     saveSalesStatsCache();
     toast(`Vendido: ${_salePart.marca} ${_salePart.modelo} por $${price.toLocaleString("es-CL")}`);
@@ -291,19 +322,45 @@ async function openMySales() {
       return;
     }
     const total = sales.reduce((s, v) => s + (v.total || 0), 0);
-    $("hist-sub").textContent = `${sales.length} ventas · $${Math.round(total).toLocaleString("es-CL")} total`;
+    const com = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
+    $("hist-sub").textContent = `${sales.length} ventas · $${Math.round(total).toLocaleString("es-CL")} total · $${Math.round(com).toLocaleString("es-CL")} comisión`;
     list.innerHTML = sales.map(v => {
       const items = (v.items || []).map(it => `${it.marca} ${it.modelo}`).join(", ");
+      const fec = v.fecha || "";
+      const comision = v.comision || Math.round((v.total||0) * COMMISSION_RATE);
       return `<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr);align-items:flex-start">
-        <span style="font-size:9px;color:var(--t4);white-space:nowrap">${v.fecha || ""}</span>
+        <span style="font-size:9px;color:var(--t4);white-space:nowrap;min-width:50px">${fec}</span>
         <span style="font-size:11px;flex:1">${escH(items)}</span>
         <span style="font-size:12px;font-weight:700;color:var(--gold)">$${Math.round(v.total||0).toLocaleString("es-CL")}</span>
+        <span style="font-size:10px;color:var(--amber-lt)">$${Math.round(comision).toLocaleString("es-CL")}</span>
       </div>`;
     }).join("");
+
+    let excelBtn = $("hist-excel-btn");
+    if (excelBtn) excelBtn.onclick = () => downloadSalesExcel(sales);
   } catch(e) {
     list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-lt);font-size:12px">Error al cargar ventas</div>';
     console.error(e);
   }
+}
+
+function downloadSalesExcel(sales) {
+  if (!sales || !sales.length) { toast("Sin ventas para exportar"); return; }
+  if (typeof XLSX === "undefined") { toast("Error: XLSX no disponible"); return; }
+  const rows = sales.map((v, i) => ({
+    "#": i + 1,
+    Fecha: v.fecha || "",
+    Vendedor: v.vendedor || sellerName,
+    Marca: (v.items||[]).map(it => it.marca).join(", "),
+    Modelo: (v.items||[]).map(it => it.modelo).join(", "),
+    Total: v.total || 0,
+    Comision: v.comision || Math.round((v.total||0) * COMMISSION_RATE)
+  }));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, "Ventas");
+  XLSX.writeFile(wb, `ventas-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast("Excel descargado");
 }
 
 async function showPartHistory(part) {
