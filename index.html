@@ -121,7 +121,7 @@
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.modal-bg.on').forEach(function(m){m.classList.remove('on')});var lb=document.getElementById('lightbox');if(lb)lb.classList.remove('on')}});
 </script>
 <script>
-document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('ven-search');if(!s)return;s.oninput=null;s.placeholder='Buscar… Enter ↵';s.onkeydown=function(e){if(e.key==='Enter'){searchFilter=this.value;clearTimeout(searchDebounce);renderParts()}}});
+document.addEventListener('focusin',function(e){var i=e.target;if(i.tagName!=='INPUT'||i._enterSearch)return;var ph=i.placeholder||'';if(ph.indexOf('Buscar')<0&&ph.indexOf('buscar')<0)return;i._enterSearch=true;i._origInput=i.oninput;i.oninput=function(){};if(ph.indexOf('↵')<0)i.placeholder=ph.replace(/…*$/,'').trim()+' ↵';i.onkeydown=function(e){if(e.key==='Enter'&&i._origInput)i._origInput({target:{value:this.value}})}});
 </script>
 </body>
 </html>
