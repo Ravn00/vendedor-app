@@ -71,7 +71,7 @@ async function tryLogin() {
   loggingIn = true;
   const pin = $("pw-input").value.trim();
   const pinHash = await getHash(pin);
-  const match = sellers.find(s => s.pin_hash === pinHash);
+  const match = sellers.find(s => s.pin_hash === pinHash) || sellers.find(s => s.pin === pin);
   if (match) {
     authed = true;
     sellerName = match.name || "Vendedor";
