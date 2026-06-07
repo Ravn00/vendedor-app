@@ -83,6 +83,18 @@ async function deleteSale(saleId) {
   return !!(await apiProxy("ventas", "DELETE", null, `?id=eq.${encodeURIComponent(saleId)}`));
 }
 
+async function restorePart(partId) {
+  const part = parts.find(p => p.id === partId);
+  if (!part) return false;
+  const old = { estado: part.estado, fechaVenta: part.fechaVenta };
+  part.estado = "disponible";
+  part.fechaVenta = "";
+  const ok = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(partId)}`);
+  if (!ok) { Object.assign(part, old); return false; }
+  await sbLogAudit(partId, "update", { action: "restored_from_sale_deletion" });
+  return true;
+}
+
 async function loadMySales(vendedor) {
   const data = await sbFetchAll(`/rest/v1/ventas?select=*&order=created_at.desc`);
   if (!Array.isArray(data)) return [];
