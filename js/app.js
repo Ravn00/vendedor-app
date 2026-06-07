@@ -64,12 +64,13 @@ async function reloadLastPaidAt() {
   } catch(_) {}
 }
 
-function tryLogin() {
+async function tryLogin() {
   if (loggingIn) return;
+  loggingIn = true;
   const pin = $("pw-input").value.trim();
-  const match = sellers.find(s => String(s.pin) === pin);
+  const pinHash = await getHash(pin);
+  const match = sellers.find(s => s.pin_hash === pinHash);
   if (match) {
-    loggingIn = true;
     authed = true;
     sellerName = match.name || "Vendedor";
     refreshLastPaidAt();
@@ -81,6 +82,7 @@ function tryLogin() {
   } else {
     $("pw-error").textContent = "PIN incorrecto";
     setTimeout(() => $("pw-error").textContent = "", 2000);
+    loggingIn = false;
   }
 }
 
@@ -300,15 +302,6 @@ function updateStats() {
 }
 
 function closeModal(id) { $(id).classList.remove("on"); }
-
-function toast(msg) {
-  const el = $("toast");
-  const msgEl = $("toast-msg");
-  if (!el || !msgEl) return;
-  msgEl.textContent = msg;
-  el.classList.add("on");
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("on"), 3000);
-}
 
 async function openMySales() {
   const list = $("hist-list");
