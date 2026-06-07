@@ -118,6 +118,7 @@ function renderParts() {
         <div class="part-card-meta">${escH(p.años)} · ${escH(p.posicion)} · ${escH(p.categoria)}</div>
         ${p.precioVenta ? `<div class="part-card-price">$${Number(p.precioVenta).toLocaleString("es-CL")}</div>` : ""}
         ${p.ubicacion ? `<div class="part-card-ubic">📍 ${escH(p.ubicacion)}</div>` : ""}
+        ${(p.stock && p.stock > 1) ? `<div class="part-card-ubic">📦 x${p.stock}</div>` : ""}
         ${est === "reservada" ? `<div class="part-card-resv-badge">Reservada</div>` : ""}
       </div>
       <div class="part-card-actions">
@@ -156,8 +157,13 @@ async function confirmSale() {
   const btn = $("ven-confirm"); btn.disabled = true; btn.textContent = "Guardando…";
   try {
     await recordSale(_salePart, price, sellerName);
-    const idx = parts.findIndex(p => p.id === _salePart.id);
-    if (idx > -1) parts.splice(idx, 1);
+    const stockRestante = (_salePart.stock !== undefined && _salePart.stock !== null) ? Number(_salePart.stock) : 1;
+    if (stockRestante > 1) {
+      _salePart.stock = stockRestante - 1;
+    } else {
+      const idx = parts.findIndex(p => p.id === _salePart.id);
+      if (idx > -1) parts.splice(idx, 1);
+    }
     closeModal("ven-modal");
     renderParts();
     updateStats();
