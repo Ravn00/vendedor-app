@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5.0"/>
 <title>V-CAP</title>
 <meta name="theme-color" content="#0D0F12"/>
 <meta name="mobile-web-app-capable" content="yes"/>
@@ -10,9 +10,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="V-CAP"/>
 <link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/styles.css"/>
 </head>
 <body>
+<a class="skip-link" href="#app-main">Saltar al contenido</a>
 
 <!-- PASSWORD GATE -->
 <div id="pw-gate" class="on">
@@ -30,7 +34,7 @@
 <div id="app-main">
   <header class="app-hdr">
     <div class="hdr-left">
-      <div class="hdr-title">Vendedor</div>
+      <h1 class="hdr-title">Vendedor</h1>
       <div class="hdr-sub" id="seller-name"></div>
       <div style="font-size:7px;color:var(--t4);letter-spacing:3px;font-weight:300;text-transform:uppercase;margin-top:1px;opacity:.5;user-select:none">by: ravn</div>
     </div>
@@ -45,7 +49,7 @@
   <div class="seller-bar" id="seller-bar">
     <span class="sbar-item">💰 Vendido: $<strong id="stat-vendido">0</strong></span>
     <span class="sbar-item">📊 Pendiente: $<strong id="stat-comision">0</strong></span>
-    <span class="sbar-item" id="sbar-lastpay" style="display:none;font-size:9px;color:var(--t4)">🕐 <span id="stat-lastpay"></span></span>
+    <span class="sbar-item" id="sbar-lastpay" style="display:none">🕐 <span id="stat-lastpay"></span></span>
   </div>
 
   <div class="search-bar">
@@ -62,8 +66,8 @@
   <div class="modal-sheet">
     <div class="modal-title" id="ven-title">Parte</div>
     <div class="modal-sub" id="ven-detail"></div>
-    <div class="fld"><div class="fld-label">Precio de venta final</div>
-      <input class="fld-input" id="ven-price" type="number" step="100" min="0" placeholder="0"/></div>
+    <div class="fld"><label class="fld-label" for="ven-price">Precio de venta final</label>
+      <input class="fld-input" id="ven-price" name="ven-price" type="number" step="100" min="0" placeholder="0"/></div>
     <div class="modal-btns">
       <button class="btn-primary" id="ven-confirm">Confirmar Venta</button>
       <button class="btn-ghost-sm" id="ven-cancel">Cancelar</button>
@@ -76,12 +80,12 @@
   <div class="modal-sheet">
     <div class="modal-title" id="res-title">Reservar</div>
     <div class="modal-sub">Datos del cliente para la reserva</div>
-    <div class="fld"><div class="fld-label">Nombre del cliente</div>
-      <input class="fld-input" id="res-cliente" placeholder="Nombre" autocomplete="off"/></div>
-    <div class="fld"><div class="fld-label">Teléfono</div>
-      <input class="fld-input" id="res-telefono" type="tel" placeholder="+56 9 XXXX XXXX"/></div>
-    <div class="fld"><div class="fld-label">Nota (opcional)</div>
-      <input class="fld-input" id="res-nota" placeholder="Nota"/></div>
+    <div class="fld"><label class="fld-label" for="res-cliente">Nombre del cliente</label>
+      <input class="fld-input" id="res-cliente" name="res-cliente" placeholder="Nombre" autocomplete="off"/></div>
+    <div class="fld"><label class="fld-label" for="res-telefono">Teléfono</label>
+      <input class="fld-input" id="res-telefono" name="res-telefono" type="tel" placeholder="+56 9 XXXX XXXX"/></div>
+    <div class="fld"><label class="fld-label" for="res-nota">Nota (opcional)</label>
+      <input class="fld-input" id="res-nota" name="res-nota" placeholder="Nota"/></div>
     <div class="modal-btns">
       <button class="btn-primary" id="res-confirm">Confirmar Reserva</button>
       <button class="btn-ghost-sm" id="res-cancel">Cancelar</button>
@@ -103,7 +107,7 @@
 <div id="toast" aria-live="polite"><span id="toast-msg"></span></div>
 
 <!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()">
+<div id="lightbox" onclick="closeLightbox()" onkeydown="if(event.key==='Escape')closeLightbox()" role="dialog" aria-modal="true" aria-label="Imagen ampliada" tabindex="-1">
   <img id="lb-img" src="" alt="Imagen ampliada"/>
   <button id="lb-close" onclick="closeLightbox()" aria-label="Cerrar">&#10005;</button>
 </div>
@@ -116,5 +120,9 @@
 <div style="text-align:center;padding:16px 0 32px;border-top:1px solid var(--bdr2);margin-top:16px">
   <button class="btn-ghost-sm" onclick="resetAllData()" style="color:var(--red-lt);border-color:var(--red-lt);font-size:10px">Reset Total — eliminar todo</button>
 </div>
+<script>
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.modal-bg.on').forEach(function(m){m.classList.remove('on')});var lb=document.getElementById('lightbox');if(lb)lb.classList.remove('on')}});
+new MutationObserver(function(){document.querySelectorAll('.part-card:not([role])').forEach(function(c){c.setAttribute('role','button');c.setAttribute('tabindex','0')})}).observe(document.getElementById('part-list'),{childList:true});
+</script>
 </body>
 </html>
