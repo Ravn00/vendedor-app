@@ -79,6 +79,10 @@ async function loadPartHistory(partId) {
   return Array.isArray(data) ? data : [];
 }
 
+async function deleteSale(saleId) {
+  return !!(await apiProxy("ventas", "DELETE", null, `?id=eq.${encodeURIComponent(saleId)}`));
+}
+
 async function loadMySales(vendedor) {
   const data = await sbFetchAll(`/rest/v1/ventas?select=*&order=created_at.desc`);
   if (!Array.isArray(data)) return [];
