@@ -6,16 +6,35 @@ const ACTION_LABELS = { create:"Creada", update:"Editada", delete:"Eliminada", s
 
 async function init() {
   await loadSellerConfig();
-  $("pw-btn").onclick = tryLogin;
-  $("pw-input").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
+
+  // Session check: auto-login si la sesión sigue vigente
+  const session = getSessionUser();
+  if (session && session.name && sellers.some(s => s.name === session.name)) {
+    authed = true;
+    sellerName = session.name;
+    $("pw-gate").classList.remove("on");
+    $("app-main").classList.add("on");
+    $("seller-name").textContent = sellerName;
+    loadData();
+  } else {
+    clearSession();
+    $("pw-btn").onclick = tryLogin;
+    $("pw-input").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
+  }
+
   let searchDebounce; $("ven-search").oninput = e => { searchFilter = e.target.value; clearTimeout(searchDebounce); searchDebounce = setTimeout(renderParts, 250); };
   $("ven-confirm").onclick = confirmSale;
   $("ven-cancel").onclick = () => closeModal("ven-modal");
   $("res-confirm").onclick = confirmReserve;
   $("res-cancel").onclick = () => closeModal("res-modal");
-  $("refresh-btn").onclick = () => { loadAvailableParts().then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
+  $("refresh-btn").onclick = () => { Promise.all([loadAvailableParts(), loadSalesStats()]).then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
   $("history-btn").onclick = openMySales;
   $("hist-close-btn").onclick = () => closeModal("hist-modal");
+
+  // Refrescar sesión en cada interacción
+  const refresh = () => { if (authed) saveSession(sellerName); };
+  document.addEventListener("click", refresh);
+  document.addEventListener("keydown", refresh);
 }
 
 function tryLogin() {
@@ -26,6 +45,7 @@ function tryLogin() {
     loggingIn = true;
     authed = true;
     sellerName = match.name || "Vendedor";
+    saveSession(sellerName);
     $("pw-gate").classList.remove("on");
     $("app-main").classList.add("on");
     $("seller-name").textContent = sellerName;
@@ -39,9 +59,22 @@ function tryLogin() {
 async function loadData() {
   $("loading-state").classList.add("on");
   await loadAvailableParts();
+  await loadSalesStats();
   $("loading-state").classList.remove("on");
   renderParts();
   updateStats();
+}
+
+async function loadSalesStats() {
+  const sales = await loadMySales(sellerName);
+  salesTotal = sales.reduce((s, v) => s + (v.total || 0), 0);
+  commissionTotal = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
+  updateCommissionDisplay();
+}
+
+function updateCommissionDisplay() {
+  $("stat-vendido").textContent = Math.round(salesTotal).toLocaleString("es-CL");
+  $("stat-comision").textContent = Math.round(commissionTotal).toLocaleString("es-CL");
 }
 
 function renderParts() {
@@ -115,6 +148,9 @@ async function confirmSale() {
     closeModal("ven-modal");
     renderParts();
     updateStats();
+    salesTotal += price;
+    commissionTotal += Math.round(price * COMMISSION_RATE);
+    updateCommissionDisplay();
     toast(`Vendido: ${_salePart.marca} ${_salePart.modelo} por $${price.toLocaleString("es-CL")}`);
   } catch(e) {
     toast("Error al guardar la venta");
