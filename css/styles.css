@@ -55,6 +55,11 @@ input:focus{outline:none}
 .hdr-refresh:hover{background:var(--s3);border-color:var(--bdr)}
 .hdr-refresh:active{transform:scale(.92)}
 
+/* SELLER BAR */
+.seller-bar{display:flex;gap:16px;padding:8px 16px;background:var(--s1);border-bottom:1px solid var(--bdr);justify-content:center}
+.sbar-item{font-size:11px;color:var(--t3);white-space:nowrap}
+.sbar-item strong{color:var(--gold);font-variant-numeric:tabular-nums}
+
 /* SEARCH */
 .search-bar{padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--bdr);position:sticky;top:50px;z-index:9}
 .search-input{width:100%;padding:10px 14px;background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r8);color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
