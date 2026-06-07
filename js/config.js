@@ -55,7 +55,8 @@ async function apiProxy(table, method, body, query) {
       body: JSON.stringify({ table, method, body, query: query || "" })
     });
     if (!res.ok) { console.warn("apiProxy error:", res.status); return null; }
-  return true;
+    return true;
+  } catch(e) { console.warn("apiProxy error:", e.message); return null; }
 }
 
 async function resetAllData() {
