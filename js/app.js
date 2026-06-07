@@ -47,6 +47,7 @@ async function autoSync() {
     renderParts();
     updateStats();
     await loadSalesStats();
+    saveSalesStatsCache();
   } catch(e) { console.warn("autoSync error:", e); }
 }
 
@@ -71,6 +72,7 @@ function tryLogin() {
 
 async function loadData() {
   $("loading-state").classList.add("on");
+  loadSalesStatsFromCache();
   await loadAvailableParts();
   try { await loadSalesStats(); } catch(e) { console.warn("loadSalesStats error:", e); }
   $("loading-state").classList.remove("on");
@@ -78,11 +80,24 @@ async function loadData() {
   updateStats();
 }
 
+function loadSalesStatsFromCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem("vcap_stats") || "{}");
+    if (c.total && c.comision) { salesTotal = c.total; commissionTotal = c.comision; updateCommissionDisplay(); }
+  } catch(_) {}
+}
+
+function saveSalesStatsCache() {
+  try { localStorage.setItem("vcap_stats", JSON.stringify({ total: salesTotal, comision: commissionTotal })); } catch(_) {}
+}
+
 async function loadSalesStats() {
+  loadSalesStatsFromCache();
   const sales = await loadMySales(sellerName);
   salesTotal = sales.reduce((s, v) => s + (v.total || 0), 0);
   commissionTotal = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
   updateCommissionDisplay();
+  saveSalesStatsCache();
 }
 
 function updateCommissionDisplay() {
@@ -170,6 +185,7 @@ async function confirmSale() {
     salesTotal += price;
     commissionTotal += Math.round(price * COMMISSION_RATE);
     updateCommissionDisplay();
+    saveSalesStatsCache();
     toast(`Vendido: ${_salePart.marca} ${_salePart.modelo} por $${price.toLocaleString("es-CL")}`);
   } catch(e) {
     toast("Error al guardar la venta");
