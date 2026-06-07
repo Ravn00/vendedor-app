@@ -10,6 +10,10 @@ const COMMISSION_RATE = 0.1;
 const SESSION_DURATION = 3600000;
 let salesTotal = 0;
 let commissionTotal = 0;
+let historicalSalesTotal = 0;
+let historicalCommission = 0;
+let pendingCommission = 0;
+let lastPaidAt = null;
 
 function getSessionUser() {
   try { const d = JSON.parse(localStorage.getItem("authSession")); return d && d.expiry > Date.now() ? d : null; } catch { return null; }
@@ -54,6 +58,12 @@ async function loadSellerConfig() {
     if (cfg.sellers && Array.isArray(cfg.sellers) && cfg.sellers.length) sellers = cfg.sellers;
     writeToken = cfg.write_token || "";
   }
+  refreshLastPaidAt();
+}
+
+function refreshLastPaidAt() {
+  const match = sellers.find(s => s.name === sellerName);
+  lastPaidAt = match?.last_paid_at || null;
 }
 
 async function apiProxy(table, method, body, query) {
