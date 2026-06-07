@@ -1,6 +1,8 @@
 let authed = false;
 let searchFilter = "";
 let loggingIn = false;
+const PAGE_SIZE = 50;
+let visibleCount = PAGE_SIZE;
 
 const ACTION_LABELS = { create:"Creada", update:"Editada", delete:"Eliminada", sale:"Vendida", reserve:"Reservada", release:"Liberada" };
 
@@ -23,7 +25,7 @@ async function init() {
     $("pw-input").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
   }
 
-  let searchDebounce; $("ven-search").oninput = e => { searchFilter = e.target.value; clearTimeout(searchDebounce); searchDebounce = setTimeout(renderParts, 250); };
+  let searchDebounce; $("ven-search").oninput = e => { searchFilter = e.target.value; visibleCount = PAGE_SIZE; clearTimeout(searchDebounce); searchDebounce = setTimeout(renderParts, 250); };
   $("ven-confirm").onclick = confirmSale;
   $("ven-cancel").onclick = () => closeModal("ven-modal");
   $("res-confirm").onclick = confirmReserve;
@@ -155,7 +157,8 @@ function renderParts() {
     return;
   }
 
-  filtered.forEach(p => {
+  const shown = filtered.slice(0, visibleCount);
+  shown.forEach(p => {
     const est = p.estado || "disponible";
     const imgSrc = p.preview || p.previewFull || "";
     const card = document.createElement("div"); card.className = "part-card" + (est === "reservada" ? " part-card-reserva" : "");
@@ -182,6 +185,14 @@ function renderParts() {
     card.querySelector(".part-card-img img[data-img]")?.addEventListener("click", (e) => { e.stopPropagation(); openLightbox(e.currentTarget.dataset.img); });
     list.appendChild(card);
   });
+
+  if (visibleCount < filtered.length) {
+    const moreBtn = document.createElement("button");
+    moreBtn.className = "load-more";
+    moreBtn.textContent = `Cargar más (${filtered.length - visibleCount} restantes)`;
+    moreBtn.onclick = () => { visibleCount += PAGE_SIZE; renderParts(); };
+    list.appendChild(moreBtn);
+  }
 }
 
 let _salePart = null;
