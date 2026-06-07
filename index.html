@@ -44,7 +44,8 @@
 
   <div class="seller-bar" id="seller-bar">
     <span class="sbar-item">💰 Vendido: $<strong id="stat-vendido">0</strong></span>
-    <span class="sbar-item">📊 Comisión: $<strong id="stat-comision">0</strong></span>
+    <span class="sbar-item">📊 Pendiente: $<strong id="stat-comision">0</strong></span>
+    <span class="sbar-item" id="sbar-lastpay" style="display:none;font-size:9px;color:var(--t4)">🕐 <span id="stat-lastpay"></span></span>
   </div>
 
   <div class="search-bar">
@@ -94,7 +95,7 @@
     <div class="modal-title">Mis Ventas</div>
     <div class="modal-sub" id="hist-sub">Tus ventas registradas</div>
     <div id="hist-list" style="max-height:50vh;overflow-y:auto;margin-bottom:12px"></div>
-    <div class="modal-btns"><button class="btn-ghost-sm" id="hist-close-btn">Cerrar</button></div>
+    <div class="modal-btns"><button class="btn-ghost-sm" id="hist-excel-btn" style="color:var(--green-lt);border-color:var(--green-lt)">📥 Excel</button><button class="btn-ghost-sm" id="hist-close-btn">Cerrar</button></div>
   </div>
 </div>
 
@@ -107,6 +108,7 @@
   <button id="lb-close" onclick="closeLightbox()" aria-label="Cerrar">&#10005;</button>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/config.js?v=2"></script>
 <script src="js/supabase.js?v=2"></script>
 <script src="js/app.js?v=2"></script>
