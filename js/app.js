@@ -324,17 +324,31 @@ async function openMySales() {
     const total = sales.reduce((s, v) => s + (v.total || 0), 0);
     const com = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
     $("hist-sub").textContent = `${sales.length} ventas · $${Math.round(total).toLocaleString("es-CL")} total · $${Math.round(com).toLocaleString("es-CL")} comisión`;
-    list.innerHTML = sales.map(v => {
+    list.innerHTML = sales.map((v, idx) => {
       const items = (v.items || []).map(it => `${it.marca} ${it.modelo}`).join(", ");
       const fec = v.fecha || "";
       const comision = v.comision || Math.round((v.total||0) * COMMISSION_RATE);
-      return `<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr);align-items:flex-start">
+      return `<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr);align-items:flex-start" data-ven-idx="${idx}">
         <span style="font-size:9px;color:var(--t4);white-space:nowrap;min-width:50px">${fec}</span>
         <span style="font-size:11px;flex:1">${escH(items)}</span>
         <span style="font-size:12px;font-weight:700;color:var(--gold)">$${Math.round(v.total||0).toLocaleString("es-CL")}</span>
         <span style="font-size:10px;color:var(--amber-lt)">$${Math.round(comision).toLocaleString("es-CL")}</span>
+        <button class="hist-del-btn" data-ven-del="${idx}" title="Eliminar venta" style="background:none;border:none;color:var(--red-lt);cursor:pointer;font-size:14px;padding:2px">✕</button>
       </div>`;
     }).join("");
+    list.querySelectorAll("[data-ven-del]").forEach(btn => {
+      const idx = parseInt(btn.dataset.venDel);
+      const sale = sales[idx];
+      if (!sale) return;
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm("¿Eliminar esta venta del historial?\nNo afecta el estado de la parte en el catálogo.")) return;
+        btn.disabled = true; btn.textContent = "…";
+        const ok = await deleteSale(sale.id);
+        if (ok) { toast("Venta eliminada"); openMySales(); }
+        else { toast("Error al eliminar"); btn.disabled = false; btn.textContent = "✕"; }
+      };
+    });
 
     let excelBtn = $("hist-excel-btn");
     if (excelBtn) excelBtn.onclick = () => downloadSalesExcel(sales);
