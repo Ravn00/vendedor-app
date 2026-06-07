@@ -26,7 +26,7 @@ function clearSession() { localStorage.removeItem("authSession"); }
 
 
 async function loadSellerConfig() {
-  const data = await sbFetch("/rest/v1/admin_config?select=*&limit=1");
+  const data = await apiProxyRead("admin_config", "*", "&limit=1");
   if (data && data.length && data[0]) {
     const cfg = data[0];
     if (cfg.sellers && Array.isArray(cfg.sellers) && cfg.sellers.length) sellers = cfg.sellers;

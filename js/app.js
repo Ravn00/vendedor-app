@@ -58,7 +58,7 @@ async function autoSync() {
 async function reloadLastPaidAt() {
   if (!authed) return;
   try {
-    const data = await sbFetch("/rest/v1/admin_config?select=sellers&limit=1");
+    const data = await apiProxyRead("admin_config", "sellers", "&limit=1");
     if (data && data.length && data[0]?.sellers) {
       sellers = data[0].sellers;
       refreshLastPaidAt();

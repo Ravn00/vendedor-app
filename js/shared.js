@@ -2,6 +2,8 @@
 function $(id) { return document.getElementById(id); }
 function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 
+const API_READ_TOKEN = "ap-r-v1.0";
+
 function toast(msg) {
   const el = $("toast");
   if (!el) return;
@@ -115,6 +117,16 @@ async function apiProxy(table, method, body, query) {
     if (!res.ok) { console.warn("apiProxy error:", res.status); return null; }
     return true;
   } catch(e) { console.warn("apiProxy error:", e.message); return null; }
+}
+
+async function apiProxyRead(table, select, query) {
+  try {
+    const q = query ? `&q=${encodeURIComponent(query)}` : '';
+    const url = `${SB_URL}/functions/v1/api-proxy?table=${encodeURIComponent(table)}&select=${encodeURIComponent(select || '*')}${q}`;
+    const res = await fetch(url, { headers: { "x-read-token": API_READ_TOKEN } });
+    if (!res.ok) { console.warn("apiProxyRead error:", res.status); return null; }
+    return await res.json();
+  } catch(e) { console.warn("apiProxyRead error:", e.message); return null; }
 }
 
 async function sbLogAudit(partId, action, changes) {

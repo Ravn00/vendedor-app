@@ -58,7 +58,7 @@ async function healthFetch(url) {
 
 async function runHealthCheck() {
   await Promise.all([
-    checkService("Supabase", `${SB_URL}/rest/v1/admin_config?select=id&limit=1`),
+    checkService("Supabase", `${SB_URL}/rest/v1/partes?select=id&limit=1`),
     checkService("analyze-part", async () => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), CHECK_TIMEOUT);
