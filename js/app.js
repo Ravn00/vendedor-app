@@ -35,6 +35,19 @@ async function init() {
   const refresh = () => { if (authed) saveSession(sellerName); };
   document.addEventListener("click", refresh);
   document.addEventListener("keydown", refresh);
+
+  // Auto-sync cada 30 segundos
+  setInterval(autoSync, 30000);
+}
+
+async function autoSync() {
+  if (!authed) return;
+  try {
+    await loadAvailableParts();
+    renderParts();
+    updateStats();
+    await loadSalesStats();
+  } catch(e) { console.warn("autoSync error:", e); }
 }
 
 function tryLogin() {
@@ -59,7 +72,7 @@ function tryLogin() {
 async function loadData() {
   $("loading-state").classList.add("on");
   await loadAvailableParts();
-  await loadSalesStats();
+  try { await loadSalesStats(); } catch(e) { console.warn("loadSalesStats error:", e); }
   $("loading-state").classList.remove("on");
   renderParts();
   updateStats();
