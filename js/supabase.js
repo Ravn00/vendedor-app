@@ -20,7 +20,7 @@ async function recordSale(part, price, vendedor) {
   // Conditional PATCH: fail if stock already decremented or part already sold (prevents double-sale)
   const cond = stockActual > 1
     ? `&data->>stock=eq.${encodeURIComponent(String(stockActual))}`
-    : `&data->>estado=ne.${encodeURIComponent("vendida")}`;
+    : `&data->>estado=neq.${encodeURIComponent("vendida")}`;
 
   if (stockActual > 1) {
     part.stock = stockActual - 1;
