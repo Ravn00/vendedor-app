@@ -28,6 +28,8 @@ async function init() {
   let searchDebounce; $("ven-search").oninput = e => { searchFilter = e.target.value; visibleCount = PAGE_SIZE; clearTimeout(searchDebounce); searchDebounce = setTimeout(renderParts, 250); };
   $("ven-confirm").onclick = confirmSale;
   $("ven-cancel").onclick = () => closeModal("ven-modal");
+  $("lote-confirm").onclick = confirmLoteSale;
+  $("lote-cancel").onclick = () => closeModal("ven-lote-modal");
   $("res-confirm").onclick = confirmReserve;
   $("res-cancel").onclick = () => closeModal("res-modal");
   $("refresh-btn").onclick = () => { Promise.all([loadAvailableParts(), loadSalesStats()]).then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
@@ -172,6 +174,7 @@ function renderParts() {
         ${est === "reservada" ? `<div class="part-card-resv-badge">Reservada</div>` : ""}
       </div>
       <div class="part-card-actions">
+        ${(p.stock && p.stock > 1) ? `<button class="pc-action pc-lote" data-lote title="Venta por lote" aria-label="Venta por lote">📦</button>` : ""}
         <button class="pc-action" data-whatsapp title="WhatsApp" aria-label="WhatsApp">💬</button>
         <button class="pc-action" data-hist title="Historial" aria-label="Historial">📋</button>
       </div>`;
@@ -180,6 +183,7 @@ function renderParts() {
     } else {
       card.onclick = () => openSaleModal(p);
     }
+    card.querySelector("[data-lote]")?.addEventListener("click", (e) => { e.stopPropagation(); openLoteModal(p); });
     card.querySelector("[data-whatsapp]").onclick = (e) => { e.stopPropagation(); copyToClipboard(formatWhatsAppText(p)); };
     card.querySelector("[data-hist]").onclick = (e) => { e.stopPropagation(); showPartHistory(p); };
     card.querySelector(".part-card-img img[data-img]")?.addEventListener("click", (e) => { e.stopPropagation(); openLightbox(e.currentTarget.dataset.img); });
@@ -314,6 +318,57 @@ function updateStats() {
 
 function closeModal(id) { $(id).classList.remove("on"); }
 
+let _lotePart = null;
+
+function openLoteModal(part) {
+  _lotePart = part;
+  const stock = (part.stock !== undefined && part.stock !== null) ? Number(part.stock) : 1;
+  $("lote-title").textContent = `${part.marca} ${part.modelo}`;
+  $("lote-detail").textContent = `${part.años} · ${part.posicion} · ${part.categoria}`;
+  $("lote-stock").textContent = `${stock} unidad${stock !== 1 ? "es" : ""}`;
+  $("lote-cantidad").value = Math.min(stock, 1);
+  $("lote-cantidad").max = stock;
+  $("lote-precio").value = "";
+  $("lote-modal").classList.add("on");
+  setTimeout(() => $("lote-cantidad").focus(), 100);
+}
+
+async function confirmLoteSale() {
+  if (!_lotePart) return;
+  const stockTotal = (Number(_lotePart.stock) || 1);
+  const cant = parseInt($("lote-cantidad").value);
+  if (!cant || cant < 1) { toast("Ingresá una cantidad válida"); return; }
+  if (cant > stockTotal) { toast(`Solo hay ${stockTotal} unidades disponibles`); return; }
+  const raw = $("lote-precio").value.replace(/\./g, '').replace(',', '.');
+  const total = parseFloat(raw);
+  if (!total || total <= 0) { toast("Ingresá el precio total del lote"); return; }
+  const btn = $("lote-confirm"); btn.disabled = true; btn.textContent = "Guardando…";
+  try {
+    await recordBatchSale(_lotePart, cant, total, sellerName);
+    const restante = stockTotal - cant;
+    if (restante > 0) {
+      _lotePart.stock = restante;
+    } else {
+      const idx = parts.findIndex(p => p.id === _lotePart.id);
+      if (idx > -1) parts.splice(idx, 1);
+    }
+    closeModal("ven-lote-modal");
+    renderParts();
+    updateStats();
+    historicalSalesTotal += total;
+    historicalCommission += Math.round(total * COMMISSION_RATE);
+    pendingCommission += Math.round(total * COMMISSION_RATE);
+    updateCommissionDisplay();
+    saveSalesStatsCache();
+    toast(`Lote vendido: ${cant}x ${_lotePart.marca} ${_lotePart.modelo} por $${total.toLocaleString("es-CL")}`);
+  } catch(e) {
+    toast("Error al guardar la venta por lote");
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = "Confirmar Lote";
+  }
+}
+
 async function openMySales() {
   const list = $("hist-list");
   if (!list) return;
@@ -329,7 +384,7 @@ async function openMySales() {
     const com = sales.reduce((s, v) => s + (v.comision || Math.round((v.total || 0) * COMMISSION_RATE)), 0);
     $("hist-sub").textContent = `${sales.length} ventas · $${Math.round(total).toLocaleString("es-CL")} total · $${Math.round(com).toLocaleString("es-CL")} comisión`;
     list.innerHTML = sales.map((v, idx) => {
-      const items = (v.items || []).map(it => `${it.marca} ${it.modelo}`).join(", ");
+      const items = (v.items || []).map(it => `${it.marca} ${it.modelo}${it.cantidad && it.cantidad > 1 ? ` x${it.cantidad}` : ""}`).join(", ");
       const fec = v.fecha || "";
       const comision = v.comision || Math.round((v.total||0) * COMMISSION_RATE);
       return `<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr);align-items:flex-start" data-ven-idx="${idx}">

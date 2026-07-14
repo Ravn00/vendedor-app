@@ -98,6 +98,47 @@ async function restorePart(partId) {
   return true;
 }
 
+async function recordBatchSale(part, cantidad, total, vendedor) {
+  const now = new Date().toLocaleString("es-CL");
+  const ventaId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
+  const stockActual = Number(part.stock) || 1;
+  const old = { estado: part.estado, stock: part.stock, fechaVenta: part.fechaVenta };
+
+  const cond = stockActual > 1
+    ? `&data->>stock=eq.${encodeURIComponent(String(stockActual))}`
+    : `&data->>estado=neq.${encodeURIComponent("vendida")}`;
+
+  const restante = stockActual - cantidad;
+  if (restante > 0) {
+    part.stock = restante;
+  } else {
+    part.estado = "vendida";
+    part.fechaVenta = now;
+  }
+
+  const resUpdate = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}${cond}`);
+  if (!resUpdate) {
+    Object.assign(part, old);
+    throw new Error("La parte ya fue vendida o su stock cambió");
+  }
+
+  const precioUnit = Math.round(total / cantidad);
+  const venta = {
+    id: ventaId, clienteId: null, clienteNombre: "Venta directa",
+    items: [{ partId: part.id, marca: part.marca, modelo: part.modelo, precio: precioUnit, cantidad }],
+    total, comision: Math.round(total * 0.1), vendedor, fecha: now, notas: `Lote: ${cantidad} unidades`
+  };
+
+  if (!await apiProxy("ventas", "POST", { id: ventaId, data: venta })) {
+    Object.assign(part, old);
+    await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}`);
+    throw new Error("Error al registrar la venta por lote");
+  }
+
+  await sbLogAudit(part.id, "sale", { vendedor, total, cantidad, ventaId });
+  return venta;
+}
+
 async function loadMySales(vendedor) {
   const data = await sbFetchAll(`/rest/v1/ventas?select=*&order=created_at.desc`);
   if (!Array.isArray(data)) return [];

@@ -100,6 +100,24 @@
   </div>
 </div>
 
+<!-- BATCH SALE MODAL -->
+<div class="modal-bg" id="ven-lote-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="lote-title">Venta por lote</div>
+    <div class="modal-sub" id="lote-detail"></div>
+    <div class="fld"><label class="fld-label">Stock actual</label>
+      <div class="fld-label" id="lote-stock" style="font-weight:700;color:var(--gold)"></div></div>
+    <div class="fld"><label class="fld-label" for="lote-cantidad">Cantidad a vender</label>
+      <input class="fld-input" id="lote-cantidad" type="number" min="1" step="1" placeholder="1"/></div>
+    <div class="fld"><label class="fld-label" for="lote-precio">Precio total (lote)</label>
+      <input class="fld-input" id="lote-precio" type="number" step="100" min="0" placeholder="0"/></div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="lote-confirm">Confirmar Lote</button>
+      <button class="btn-ghost-sm" id="lote-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" aria-live="polite"><span id="toast-msg"></span></div>
 
