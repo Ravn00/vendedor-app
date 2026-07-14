@@ -149,3 +149,6 @@ input:focus{outline:none}
 /* LOAD MORE */
 .load-more{width:100%;padding:12px;margin-top:8px;background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r8);color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
 .load-more:hover{background:var(--s3);border-color:var(--bdr)}
+
+/* LOTE SEARCH ITEMS */
+.lote-search-item:hover{background:var(--s3)!important}

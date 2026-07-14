@@ -29,9 +29,10 @@ async function init() {
   $("ven-confirm").onclick = confirmSale;
   $("ven-cancel").onclick = () => closeModal("ven-modal");
   $("lote-confirm").onclick = confirmLoteSale;
-  $("lote-cancel").onclick = () => closeModal("ven-lote-modal");
+  $("lote-cancel").onclick = () => { closeLoteModal(); };
   $("res-confirm").onclick = confirmReserve;
   $("res-cancel").onclick = () => closeModal("res-modal");
+  $("lote-btn").onclick = () => openLoteModal();
   $("refresh-btn").onclick = () => { Promise.all([loadAvailableParts(), loadSalesStats()]).then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
   $("history-btn").onclick = openMySales;
   $("hist-close-btn").onclick = () => closeModal("hist-modal");
@@ -174,7 +175,6 @@ function renderParts() {
         ${est === "reservada" ? `<div class="part-card-resv-badge">Reservada</div>` : ""}
       </div>
       <div class="part-card-actions">
-        ${(p.stock && p.stock > 1) ? `<button class="pc-action pc-lote" data-lote title="Venta por lote" aria-label="Venta por lote">📦</button>` : ""}
         <button class="pc-action" data-whatsapp title="WhatsApp" aria-label="WhatsApp">💬</button>
         <button class="pc-action" data-hist title="Historial" aria-label="Historial">📋</button>
       </div>`;
@@ -183,7 +183,6 @@ function renderParts() {
     } else {
       card.onclick = () => openSaleModal(p);
     }
-    card.querySelector("[data-lote]")?.addEventListener("click", (e) => { e.stopPropagation(); openLoteModal(p); });
     card.querySelector("[data-whatsapp]").onclick = (e) => { e.stopPropagation(); copyToClipboard(formatWhatsAppText(p)); };
     card.querySelector("[data-hist]").onclick = (e) => { e.stopPropagation(); showPartHistory(p); };
     card.querySelector(".part-card-img img[data-img]")?.addEventListener("click", (e) => { e.stopPropagation(); openLightbox(e.currentTarget.dataset.img); });
@@ -318,54 +317,161 @@ function updateStats() {
 
 function closeModal(id) { $(id).classList.remove("on"); }
 
-let _lotePart = null;
+function closeLoteModal() {
+  closeModal("ven-lote-modal");
+  $("lote-search").oninput = null;
+  _loteCart = [];
+}
 
-function openLoteModal(part) {
-  _lotePart = part;
-  const stock = (part.stock !== undefined && part.stock !== null) ? Number(part.stock) : 1;
-  $("lote-title").textContent = `${part.marca} ${part.modelo}`;
-  $("lote-detail").textContent = `${part.años} · ${part.posicion} · ${part.categoria}`;
-  $("lote-stock").textContent = `${stock} unidad${stock !== 1 ? "es" : ""}`;
-  $("lote-cantidad").value = Math.min(stock, 1);
-  $("lote-cantidad").max = stock;
-  $("lote-precio").value = "";
+let _loteCart = [];
+let _loteSearchDebounce = null;
+
+function openLoteModal() {
+  _loteCart = [];
+  const searchInput = $("lote-search");
+  searchInput.value = "";
+  $("lote-search-results").innerHTML = "";
+  renderLoteCart();
   $("lote-modal").classList.add("on");
-  setTimeout(() => $("lote-cantidad").focus(), 100);
+  setTimeout(() => searchInput.focus(), 100);
+
+  searchInput.oninput = () => {
+    clearTimeout(_loteSearchDebounce);
+    _loteSearchDebounce = setTimeout(() => renderLoteSearchResults(searchInput.value), 200);
+  };
+  renderLoteSearchResults("");
+}
+
+function renderLoteSearchResults(q) {
+  const results = $("lote-search-results");
+  if (!results) return;
+  const query = (q || "").toLowerCase();
+
+  // Filtrar partes disponibles que NO estén ya en el carrito
+  const inCartIds = new Set(_loteCart.map(item => item.part.id));
+  let candidates = parts.filter(p => {
+    const est = p.estado || (p.sold ? "vendida" : "disponible");
+    if (est !== "disponible") return false;
+    if (inCartIds.has(p.id)) return false;
+    return true;
+  });
+  if (query) {
+    candidates = candidates.filter(p => {
+      const s = [p.marca, p.modelo, p.categoria, p.posicion, p.ubicacion, p.descripcion, p.codigoOem].join(" ").toLowerCase();
+      return s.includes(query);
+    });
+  }
+  if (!candidates.length) {
+    results.innerHTML = `<div style="padding:10px;color:var(--t4);font-size:11px;text-align:center">${query ? "Sin resultados" : "No hay partes disponibles"}</div>`;
+    return;
+  }
+  results.innerHTML = candidates.map(p => {
+    return `<div class="lote-search-item" data-lote-pick="${p.id}" style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--bdr);cursor:pointer">
+      <span style="flex:1;font-size:11px">${escH(p.marca)} ${escH(p.modelo)}</span>
+      <span style="font-size:9px;color:var(--t4)">${p.posicion}</span>
+      <button class="lote-add-btn" style="background:var(--green-lt);border:none;border-radius:var(--r4);color:#000;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer">+Agregar</button>
+    </div>`;
+  }).join("");
+  results.querySelectorAll("[data-lote-pick]").forEach(el => {
+    const btn = el.querySelector(".lote-add-btn");
+    if (btn) {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = el.dataset.lotePick;
+        const found = parts.find(p => String(p.id) === String(id));
+        if (found) promptAddToCart(found);
+      };
+    }
+  });
+}
+
+function promptAddToCart(part) {
+  // Crear mini prompt inline para el precio
+  const results = $("lote-search-results");
+  const precio = prompt(`Precio para: ${part.marca} ${part.modelo}`, part.precioVenta || "");
+  if (precio === null) return;
+  const num = parseFloat(precio.replace(/\./g, "").replace(",", "."));
+  if (!num || num <= 0) { toast("Precio inválido"); return; }
+
+  _loteCart.push({ part, price: num });
+  renderLoteCart();
+  renderLoteSearchResults($("lote-search").value);
+  toast(`${part.marca} ${part.modelo} — $${num.toLocaleString("es-CL")}`);
+}
+
+function removeFromCart(index) {
+  _loteCart.splice(index, 1);
+  renderLoteCart();
+  renderLoteSearchResults($("lote-search").value);
+}
+
+function renderLoteCart() {
+  const cart = $("lote-cart");
+  const total = $("lote-total");
+  const confirmBtn = $("lote-confirm");
+
+  if (!_loteCart.length) {
+    cart.innerHTML = `<div style="padding:12px;color:var(--t4);font-size:11px;text-align:center">Carrito vacío — buscá partes arriba y agregalas</div>`;
+    total.textContent = "$0";
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = "0.4";
+    return;
+  }
+
+  confirmBtn.disabled = false;
+  confirmBtn.style.opacity = "1";
+
+  const sum = _loteCart.reduce((s, item) => s + item.price, 0);
+  total.textContent = "$" + Math.round(sum).toLocaleString("es-CL");
+
+  cart.innerHTML = _loteCart.map((item, idx) => {
+    return `<div style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--bdr)">
+      <span style="flex:1;font-size:11px">${escH(item.part.marca)} ${escH(item.part.modelo)}</span>
+      <span style="font-size:12px;font-weight:700;color:var(--gold)">$${Math.round(item.price).toLocaleString("es-CL")}</span>
+      <button class="lote-rm-btn" data-rm-idx="${idx}" style="background:none;border:none;color:var(--red-lt);cursor:pointer;font-size:14px;padding:2px" title="Quitar">✕</button>
+    </div>`;
+  }).join("");
+
+  cart.querySelectorAll("[data-rm-idx]").forEach(btn => {
+    btn.onclick = () => removeFromCart(parseInt(btn.dataset.rmIdx));
+  });
 }
 
 async function confirmLoteSale() {
-  if (!_lotePart) return;
-  const stockTotal = (Number(_lotePart.stock) || 1);
-  const cant = parseInt($("lote-cantidad").value);
-  if (!cant || cant < 1) { toast("Ingresá una cantidad válida"); return; }
-  if (cant > stockTotal) { toast(`Solo hay ${stockTotal} unidades disponibles`); return; }
-  const raw = $("lote-precio").value.replace(/\./g, '').replace(',', '.');
-  const total = parseFloat(raw);
-  if (!total || total <= 0) { toast("Ingresá el precio total del lote"); return; }
-  const btn = $("lote-confirm"); btn.disabled = true; btn.textContent = "Guardando…";
+  if (!_loteCart.length) { toast("Agregá al menos una parte"); return; }
+
+  const total = _loteCart.reduce((s, item) => s + item.price, 0);
+
+  const btn = $("lote-confirm");
+  btn.disabled = true;
+  btn.textContent = "Guardando…";
+
   try {
-    await recordBatchSale(_lotePart, cant, total, sellerName);
-    const restante = stockTotal - cant;
-    if (restante > 0) {
-      _lotePart.stock = restante;
-    } else {
-      const idx = parts.findIndex(p => p.id === _lotePart.id);
-      if (idx > -1) parts.splice(idx, 1);
+    await recordMultiSale(_loteCart, sellerName);
+
+    const soldIds = new Set(_loteCart.map(item => item.part.id));
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (soldIds.has(parts[i].id)) parts.splice(i, 1);
     }
+
     closeModal("ven-lote-modal");
     renderParts();
     updateStats();
+
     historicalSalesTotal += total;
-    historicalCommission += Math.round(total * COMMISSION_RATE);
-    pendingCommission += Math.round(total * COMMISSION_RATE);
+    const com = Math.round(total * COMMISSION_RATE);
+    historicalCommission += com;
+    pendingCommission += com;
     updateCommissionDisplay();
     saveSalesStatsCache();
-    toast(`Lote vendido: ${cant}x ${_lotePart.marca} ${_lotePart.modelo} por $${total.toLocaleString("es-CL")}`);
+
+    toast(`Lote vendido: ${_loteCart.length} partes por $${Math.round(total).toLocaleString("es-CL")}`);
   } catch(e) {
-    toast("Error al guardar la venta por lote");
+    toast("Error al guardar la venta múltiple");
     console.error(e);
   } finally {
-    btn.disabled = false; btn.textContent = "Confirmar Lote";
+    btn.disabled = false;
+    btn.textContent = "Confirmar Venta Múltiple";
   }
 }
 

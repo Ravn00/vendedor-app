@@ -98,45 +98,70 @@ async function restorePart(partId) {
   return true;
 }
 
-async function recordBatchSale(part, cantidad, total, vendedor) {
+async function recordMultiSale(cartItems, vendedor) {
   const now = new Date().toLocaleString("es-CL");
   const ventaId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
-  const stockActual = Number(part.stock) || 1;
-  const old = { estado: part.estado, stock: part.stock, fechaVenta: part.fechaVenta };
+  const total = cartItems.reduce((s, item) => s + item.price, 0);
 
-  const cond = stockActual > 1
-    ? `&data->>stock=eq.${encodeURIComponent(String(stockActual))}`
-    : `&data->>estado=neq.${encodeURIComponent("vendida")}`;
+  const items = cartItems.map(item => ({
+    partId: item.part.id,
+    marca: item.part.marca,
+    modelo: item.part.modelo,
+    precio: item.price,
+    cantidad: 1
+  }));
 
-  const restante = stockActual - cantidad;
-  if (restante > 0) {
-    part.stock = restante;
-  } else {
-    part.estado = "vendida";
-    part.fechaVenta = now;
-  }
-
-  const resUpdate = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}${cond}`);
-  if (!resUpdate) {
-    Object.assign(part, old);
-    throw new Error("La parte ya fue vendida o su stock cambió");
-  }
-
-  const precioUnit = Math.round(total / cantidad);
   const venta = {
     id: ventaId, clienteId: null, clienteNombre: "Venta directa",
-    items: [{ partId: part.id, marca: part.marca, modelo: part.modelo, precio: precioUnit, cantidad }],
-    total, comision: Math.round(total * 0.1), vendedor, fecha: now, notas: `Lote: ${cantidad} unidades`
+    items,
+    total,
+    comision: Math.round(total * 0.1),
+    vendedor,
+    fecha: now,
+    notas: `Venta múltiple: ${cartItems.length} partes`
   };
 
-  if (!await apiProxy("ventas", "POST", { id: ventaId, data: venta })) {
-    Object.assign(part, old);
-    await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}`);
-    throw new Error("Error al registrar la venta por lote");
-  }
+  // Actualizar cada parte a "vendida"
+  const updated = [];
+  try {
+    for (const item of cartItems) {
+      const part = item.part;
+      const old = { estado: part.estado, stock: part.stock, fechaVenta: part.fechaVenta };
+      part.estado = "vendida";
+      part.fechaVenta = now;
 
-  await sbLogAudit(part.id, "sale", { vendedor, total, cantidad, ventaId });
-  return venta;
+      const ok = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}&data->>estado=eq.disponible`);
+      if (!ok) {
+        // Rollback las que ya se actualizaron
+        Object.assign(part, old);
+        for (const done of updated) {
+          Object.assign(done.part, done.old);
+          await apiProxy("partes", "PATCH", { data: done.part }, `?id=eq.${encodeURIComponent(done.part.id)}`);
+        }
+        throw new Error(`"${part.marca} ${part.modelo}" ya no está disponible`);
+      }
+      updated.push({ part, old });
+    }
+
+    // Crear el registro de venta
+    if (!await apiProxy("ventas", "POST", { id: ventaId, data: venta })) {
+      // Rollback todas las partes
+      for (const done of updated) {
+        Object.assign(done.part, done.old);
+        await apiProxy("partes", "PATCH", { data: done.part }, `?id=eq.${encodeURIComponent(done.part.id)}`);
+      }
+      throw new Error("Error al registrar la venta múltiple");
+    }
+
+    // Audit logs
+    for (const item of cartItems) {
+      await sbLogAudit(item.part.id, "sale", { vendedor, price: item.price, ventaId });
+    }
+
+    return venta;
+  } catch(e) {
+    throw e;
+  }
 }
 
 async function loadMySales(vendedor) {
