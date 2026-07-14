@@ -1,5 +1,5 @@
 {
-  "name": "Panel - Desarmaduria Paola",
+  "name": "Panel — CAPv2",
   "short_name": "Panel CAP",
   "description": "Panel de administración",
   "start_url": "/CAPv2/PANEL.html",
@@ -10,10 +10,16 @@
   "theme_color": "#0D0F12",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='24' fill='%230D0F12'/><circle cx='96' cy='96' r='28' fill='none' stroke='%23C8A96E' stroke-width='8'/></svg>",
+      "src": "icon.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }
