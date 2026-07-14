@@ -332,7 +332,7 @@ function openLoteModal() {
   searchInput.value = "";
   $("lote-search-results").innerHTML = "";
   renderLoteCart();
-  $("lote-modal").classList.add("on");
+  $("ven-lote-modal").classList.add("on");
   setTimeout(() => searchInput.focus(), 100);
 
   searchInput.oninput = () => {
