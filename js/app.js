@@ -33,6 +33,9 @@ async function init() {
   $("res-confirm").onclick = confirmReserve;
   $("res-cancel").onclick = () => closeModal("res-modal");
   $("lote-btn").onclick = () => openLoteModal();
+  $("lote-manual-toggle").onclick = toggleManualForm;
+  $("lm-add-btn").onclick = addManualToCart;
+  $("lm-photos").onchange = previewLotePhotos;
   $("refresh-btn").onclick = () => { Promise.all([loadAvailableParts(), loadSalesStats()]).then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
   $("history-btn").onclick = openMySales;
   $("hist-close-btn").onclick = () => closeModal("hist-modal");
@@ -326,8 +329,91 @@ function closeLoteModal() {
 let _loteCart = [];
 let _loteSearchDebounce = null;
 
+function toggleManualForm() {
+  const f = $("lote-manual-form");
+  f.style.display = f.style.display === "none" ? "block" : "none";
+  if (f.style.display === "block") {
+    $("lm-name").focus();
+    $("lm-photos").value = "";
+    $("lm-photo-previews").innerHTML = "";
+  }
+}
+
+function previewLotePhotos() {
+  const files = $("lm-photos").files;
+  const previews = $("lm-photo-previews");
+  previews.innerHTML = "";
+  for (const f of files) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      img.style.cssText = "width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--bdr)";
+      previews.appendChild(img);
+    };
+    reader.readAsDataURL(f);
+  }
+}
+
+function addManualToCart() {
+  const name = $("lm-name").value.trim();
+  const priceRaw = $("lm-price").value.trim();
+  const qty = parseInt($("lm-qty").value) || 1;
+  if (!name) { toast("Escribí un nombre para el producto"); $("lm-name").focus(); return; }
+  if (!priceRaw) { toast("Poné un precio unitario"); $("lm-price").focus(); return; }
+
+  const price = parseFloat(priceRaw.replace(/\./g, "").replace(",", "."));
+  if (!price || price <= 0) { toast("Precio inválido"); return; }
+
+  const cat = $("lm-cat").value;
+
+  // Capturar fotos como data URLs
+  const photoFiles = $("lm-photos").files;
+  const photoPromises = [];
+  for (const f of photoFiles) {
+    photoPromises.push(new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(f);
+    }));
+  }
+
+  Promise.all(photoPromises).then(photos => {
+    const id = "manual-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+    const manualPart = {
+      id,
+      marca: name,
+      modelo: "",
+      categoria: cat,
+      descripcion: name,
+      posicion: "No determinado",
+      confianza: "Alta",
+      _ok: true,
+      manual: true,
+      photos: photos.length ? photos : undefined
+    };
+
+    _loteCart.push({ part: manualPart, price, quantity: qty });
+    renderLoteCart();
+    renderLoteSearchResults($("lote-search").value);
+
+    // Limpiar formulario
+    $("lm-name").value = "";
+    $("lm-price").value = "";
+    $("lm-qty").value = "1";
+    $("lm-cat").value = "varios";
+    $("lm-photos").value = "";
+    $("lm-photo-previews").innerHTML = "";
+    $("lote-manual-form").style.display = "none";
+
+    const lineTotal = price * qty;
+    toast(`${name} x${qty} — $${lineTotal.toLocaleString("es-CL")}`);
+  });
+}
+
 function openLoteModal() {
   _loteCart = [];
+  $("lote-manual-form").style.display = "none";
   const searchInput = $("lote-search");
   searchInput.value = "";
   $("lote-search-results").innerHTML = "";
@@ -347,7 +433,6 @@ function renderLoteSearchResults(q) {
   if (!results) return;
   const query = (q || "").toLowerCase();
 
-  // Filtrar partes disponibles que NO estén ya en el carrito
   const inCartIds = new Set(_loteCart.map(item => item.part.id));
   let candidates = parts.filter(p => {
     const est = p.estado || (p.sold ? "vendida" : "disponible");
@@ -386,17 +471,20 @@ function renderLoteSearchResults(q) {
 }
 
 function promptAddToCart(part) {
-  // Crear mini prompt inline para el precio
-  const results = $("lote-search-results");
-  const precio = prompt(`Precio para: ${part.marca} ${part.modelo}`, part.precioVenta || "");
+  const precio = prompt(`Precio unitario para: ${part.marca} ${part.modelo}`, part.precioVenta || "");
   if (precio === null) return;
   const num = parseFloat(precio.replace(/\./g, "").replace(",", "."));
   if (!num || num <= 0) { toast("Precio inválido"); return; }
 
-  _loteCart.push({ part, price: num });
+  const qtyRaw = prompt(`Cantidad para: ${part.marca} ${part.modelo}`, "1");
+  if (qtyRaw === null) return;
+  const qty = parseInt(qtyRaw) || 1;
+  if (qty < 1) { toast("Cantidad inválida"); return; }
+
+  _loteCart.push({ part, price: num, quantity: qty });
   renderLoteCart();
   renderLoteSearchResults($("lote-search").value);
-  toast(`${part.marca} ${part.modelo} — $${num.toLocaleString("es-CL")}`);
+  toast(`${part.marca} ${part.modelo} x${qty} — $${(num * qty).toLocaleString("es-CL")}`);
 }
 
 function removeFromCart(index) {
@@ -411,7 +499,7 @@ function renderLoteCart() {
   const confirmBtn = $("lote-confirm");
 
   if (!_loteCart.length) {
-    cart.innerHTML = `<div style="padding:12px;color:var(--t4);font-size:11px;text-align:center">Carrito vacío — buscá partes arriba y agregalas</div>`;
+    cart.innerHTML = `<div style="padding:12px;color:var(--t4);font-size:11px;text-align:center">Carrito vacío — buscá partes arriba o agregá productos manuales</div>`;
     total.textContent = "$0";
     confirmBtn.disabled = true;
     confirmBtn.style.opacity = "0.4";
@@ -421,13 +509,25 @@ function renderLoteCart() {
   confirmBtn.disabled = false;
   confirmBtn.style.opacity = "1";
 
-  const sum = _loteCart.reduce((s, item) => s + item.price, 0);
+  const sum = _loteCart.reduce((s, item) => s + item.price * (item.quantity || 1), 0);
   total.textContent = "$" + Math.round(sum).toLocaleString("es-CL");
 
   cart.innerHTML = _loteCart.map((item, idx) => {
+    const qty = item.quantity || 1;
+    const lineTotal = item.price * qty;
+    const label = item.part.manual
+      ? escH(item.part.marca)
+      : `${escH(item.part.marca)} ${escH(item.part.modelo)}`;
+    const badge = item.part.manual
+      ? `<span style="font-size:8px;background:var(--gold);color:#000;padding:1px 5px;border-radius:3px;margin-right:4px">Manual</span>`
+      : "";
     return `<div style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--bdr)">
-      <span style="flex:1;font-size:11px">${escH(item.part.marca)} ${escH(item.part.modelo)}</span>
-      <span style="font-size:12px;font-weight:700;color:var(--gold)">$${Math.round(item.price).toLocaleString("es-CL")}</span>
+      ${item.part.photos && item.part.photos[0]
+        ? `<img src="${item.part.photos[0]}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:1px solid var(--bdr)"/>`
+        : ""}
+      <span style="flex:1;font-size:11px">${badge}${label}</span>
+      <span style="font-size:9px;color:var(--t4)">x${qty}</span>
+      <span style="font-size:12px;font-weight:700;color:var(--gold)">$${Math.round(lineTotal).toLocaleString("es-CL")}</span>
       <button class="lote-rm-btn" data-rm-idx="${idx}" style="background:none;border:none;color:var(--red-lt);cursor:pointer;font-size:14px;padding:2px" title="Quitar">✕</button>
     </div>`;
   }).join("");
@@ -440,7 +540,8 @@ function renderLoteCart() {
 async function confirmLoteSale() {
   if (!_loteCart.length) { toast("Agregá al menos una parte"); return; }
 
-  const total = _loteCart.reduce((s, item) => s + item.price, 0);
+  const total = _loteCart.reduce((s, item) => s + item.price * (item.quantity || 1), 0);
+  const totalItems = _loteCart.reduce((s, item) => s + (item.quantity || 1), 0);
 
   const btn = $("lote-confirm");
   btn.disabled = true;
@@ -449,7 +550,7 @@ async function confirmLoteSale() {
   try {
     await recordMultiSale(_loteCart, sellerName);
 
-    const soldIds = new Set(_loteCart.map(item => item.part.id));
+    const soldIds = new Set(_loteCart.filter(item => !item.part.manual).map(item => item.part.id));
     for (let i = parts.length - 1; i >= 0; i--) {
       if (soldIds.has(parts[i].id)) parts.splice(i, 1);
     }
@@ -465,7 +566,7 @@ async function confirmLoteSale() {
     updateCommissionDisplay();
     saveSalesStatsCache();
 
-    toast(`Lote vendido: ${_loteCart.length} partes por $${Math.round(total).toLocaleString("es-CL")}`);
+    toast(`Lote vendido: ${_loteCart.length} ítems (${totalItems} unidades) por $${Math.round(total).toLocaleString("es-CL")}`);
   } catch(e) {
     toast("Error al guardar la venta múltiple");
     console.error(e);

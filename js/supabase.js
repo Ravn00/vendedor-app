@@ -101,15 +101,23 @@ async function restorePart(partId) {
 async function recordMultiSale(cartItems, vendedor) {
   const now = new Date().toLocaleString("es-CL");
   const ventaId = "ven-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,6);
-  const total = cartItems.reduce((s, item) => s + item.price, 0);
+  const total = cartItems.reduce((s, item) => s + item.price * (item.quantity || 1), 0);
+  const totalItems = cartItems.reduce((s, item) => s + (item.quantity || 1), 0);
 
-  const items = cartItems.map(item => ({
-    partId: item.part.id,
-    marca: item.part.marca,
-    modelo: item.part.modelo,
-    precio: item.price,
-    cantidad: 1
-  }));
+  const items = cartItems.map(item => {
+    const qty = item.quantity || 1;
+    return {
+      partId: item.part.id,
+      marca: item.part.marca,
+      modelo: item.part.modelo || "",
+      categoria: item.part.categoria || "varios",
+      descripcion: item.part.descripcion || "",
+      precio: item.price,
+      cantidad: qty,
+      manual: !!item.part.manual,
+      photos: item.part.photos || null
+    };
+  });
 
   const venta = {
     id: ventaId, clienteId: null, clienteNombre: "Venta directa",
@@ -118,13 +126,13 @@ async function recordMultiSale(cartItems, vendedor) {
     comision: Math.round(total * 0.1),
     vendedor,
     fecha: now,
-    notas: `Venta múltiple: ${cartItems.length} partes`
+    notas: `Venta múltiple: ${cartItems.length} ítems (${totalItems} unidades)`
   };
 
-  // Actualizar cada parte a "vendida"
   const updated = [];
   try {
     for (const item of cartItems) {
+      if (item.part.manual) continue;
       const part = item.part;
       const old = { estado: part.estado, stock: part.stock, fechaVenta: part.fechaVenta };
       part.estado = "vendida";
@@ -132,7 +140,6 @@ async function recordMultiSale(cartItems, vendedor) {
 
       const ok = await apiProxy("partes", "PATCH", { data: part }, `?id=eq.${encodeURIComponent(part.id)}&data->>estado=eq.disponible`);
       if (!ok) {
-        // Rollback las que ya se actualizaron
         Object.assign(part, old);
         for (const done of updated) {
           Object.assign(done.part, done.old);
@@ -143,9 +150,7 @@ async function recordMultiSale(cartItems, vendedor) {
       updated.push({ part, old });
     }
 
-    // Crear el registro de venta
     if (!await apiProxy("ventas", "POST", { id: ventaId, data: venta })) {
-      // Rollback todas las partes
       for (const done of updated) {
         Object.assign(done.part, done.old);
         await apiProxy("partes", "PATCH", { data: done.part }, `?id=eq.${encodeURIComponent(done.part.id)}`);
@@ -153,8 +158,8 @@ async function recordMultiSale(cartItems, vendedor) {
       throw new Error("Error al registrar la venta múltiple");
     }
 
-    // Audit logs
     for (const item of cartItems) {
+      if (item.part.manual) continue;
       await sbLogAudit(item.part.id, "sale", { vendedor, price: item.price, ventaId });
     }
 
