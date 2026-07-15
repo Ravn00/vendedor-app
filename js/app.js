@@ -33,7 +33,6 @@ async function init() {
   $("res-confirm").onclick = confirmReserve;
   $("res-cancel").onclick = () => closeModal("res-modal");
   $("lote-btn").onclick = () => openLoteModal();
-  $("lote-manual-toggle").onclick = toggleManualForm;
   $("lm-add-btn").onclick = addManualToCart;
   $("lm-photos").onchange = previewLotePhotos;
   $("refresh-btn").onclick = () => { Promise.all([loadAvailableParts(), loadSalesStats()]).then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
