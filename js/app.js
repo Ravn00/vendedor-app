@@ -1,5 +1,6 @@
 let authed = false;
 let searchFilter = "";
+let activeCategory = "all";
 let loggingIn = false;
 const PAGE_SIZE = 50;
 let visibleCount = PAGE_SIZE;
@@ -38,6 +39,17 @@ async function init() {
   $("refresh-btn").onclick = () => { Promise.all([loadAvailableParts(), loadSalesStats()]).then(() => { renderParts(); updateStats(); toast("Actualizado"); }).catch(() => toast("Error al actualizar")); };
   $("history-btn").onclick = openMySales;
   $("hist-close-btn").onclick = () => closeModal("hist-modal");
+
+  // Category filter
+  document.getElementById("cat-strip")?.addEventListener("click", e => {
+    const pill = e.target.closest(".cat-pill");
+    if (!pill) return;
+    document.querySelectorAll(".cat-pill").forEach(p => p.classList.remove("on"));
+    pill.classList.add("on");
+    activeCategory = pill.dataset.cat;
+    visibleCount = PAGE_SIZE;
+    renderParts();
+  });
 
   // Refrescar sesión en cada interacción
   const refresh = () => { if (authed) saveSession(sellerName); };
@@ -150,6 +162,7 @@ function renderParts() {
   let filtered = parts.filter(p => {
     const est = p.estado || (p.sold ? "vendida" : "disponible");
     if (est !== "disponible" && est !== "reservada") return false;
+    if (activeCategory !== "all" && p.categoria !== activeCategory) return false;
     if (q) {
       const s = [p.marca, p.modelo, p.categoria, p.posicion, p.ubicacion, p.descripcion, p.codigoOem].join(" ").toLowerCase();
       if (!s.includes(q)) return false;
@@ -315,6 +328,14 @@ function updateStats() {
   const reservadas = parts.filter(p => (p.estado||"disponible")==="reservada").length;
   $("stat-disponibles").textContent = disponibles;
   $("stat-reservadas").textContent = reservadas;
+  // Update category pill counts
+  const catLabels = { all:"Todas", parachoques:"Parachoques", opticos:"Ópticos", focos:"Focos", guardabarros:"Guardabarros", capots:"Capots", varios:"Varios" };
+  document.querySelectorAll(".cat-pill").forEach(pill => {
+    const cat = pill.dataset.cat;
+    const available = parts.filter(p => { const e = p.estado || (p.sold ? "vendida" : "disponible"); return e === "disponible" || e === "reservada"; });
+    const count = cat === "all" ? available.length : available.filter(p => p.categoria === cat).length;
+    pill.textContent = `${catLabels[cat] || cat}${count ? ` (${count})` : ""}`;
+  });
 }
 
 function closeModal(id) { $(id).classList.remove("on"); }
@@ -437,6 +458,7 @@ function renderLoteSearchResults(q) {
     const est = p.estado || (p.sold ? "vendida" : "disponible");
     if (est !== "disponible") return false;
     if (inCartIds.has(p.id)) return false;
+    if (activeCategory !== "all" && p.categoria !== activeCategory) return false;
     return true;
   });
   if (query) {
